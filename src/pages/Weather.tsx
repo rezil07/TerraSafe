@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui';
-import { currentWeather, weatherForecast } from '@/data/mockData';
+import { currentWeather as defaultWeather, weatherForecast as defaultForecast } from '@/data/mockData';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend,
@@ -8,24 +9,38 @@ import {
   Thermometer, Droplets, Wind, Compass, CloudRain, Gauge as GaugeIcon,
   Eye, Zap,
 } from 'lucide-react';
+import { fetchLiveWeather } from '@/services/api';
+import type { WeatherData } from '@/types';
 
 export function Weather() {
+  const [weather, setWeather] = useState<WeatherData>(defaultWeather);
+
+  useEffect(() => {
+    fetchLiveWeather('nainital').then((data) => {
+      if (data) setWeather(data);
+    });
+  }, []);
+
+  const forecastData = (weather as any).forecast && (weather as any).forecast.length > 0
+    ? (weather as any).forecast
+    : defaultForecast;
+
   const conditions = [
-    { label: 'Temperature', value: `${currentWeather.temperature}°C`, icon: Thermometer },
-    { label: 'Humidity', value: `${currentWeather.humidity}%`, icon: Droplets },
-    { label: 'Wind Speed', value: `${currentWeather.windSpeed} km/h`, icon: Wind },
-    { label: 'Wind Direction', value: `${currentWeather.windDirectionLabel} ${currentWeather.windDirection}°`, icon: Compass },
-    { label: 'Rainfall', value: `${currentWeather.rainfall} mm`, icon: CloudRain },
-    { label: 'Pressure', value: `${currentWeather.pressure} hPa`, icon: GaugeIcon },
-    { label: 'Visibility', value: `${currentWeather.visibility} km`, icon: Eye },
-    { label: 'Dew Point', value: `${currentWeather.dewPoint}°C`, icon: Droplets },
+    { label: 'Temperature', value: `${weather.temperature}°C`, icon: Thermometer },
+    { label: 'Humidity', value: `${weather.humidity}%`, icon: Droplets },
+    { label: 'Wind Speed', value: `${weather.windSpeed} km/h`, icon: Wind },
+    { label: 'Wind Direction', value: `${weather.windDirectionLabel} ${weather.windDirection}°`, icon: Compass },
+    { label: 'Rainfall', value: `${weather.rainfall} mm`, icon: CloudRain },
+    { label: 'Pressure', value: `${weather.pressure} hPa`, icon: GaugeIcon },
+    { label: 'Visibility', value: `${weather.visibility} km`, icon: Eye },
+    { label: 'Dew Point', value: `${weather.dewPoint}°C`, icon: Droplets },
   ];
 
   const derived = [
-    { label: 'Heat Index', value: `${currentWeather.heatIndex}°C`, interp: 'Extreme heat stress', risk: 'critical' as const },
-    { label: 'Fuel Moisture', value: `${currentWeather.fuelMoisture}%`, interp: 'Critically dry fuels', risk: 'critical' as const },
-    { label: 'Wind Chill', value: `${currentWeather.windChill}°C`, interp: 'Elevated fire spread risk', risk: 'high' as const },
-    { label: 'Fire Weather Index', value: currentWeather.fireWeatherIndex, interp: 'Extreme fire danger', risk: 'critical' as const },
+    { label: 'Heat Index', value: `${weather.heatIndex}°C`, interp: 'Elevated heat stress', risk: weather.heatIndex > 38 ? 'critical' as const : 'high' as const },
+    { label: 'Fuel Moisture', value: `${weather.fuelMoisture}%`, interp: weather.fuelMoisture <= 5 ? 'Critically dry fuels' : 'Moderate fuel moisture', risk: weather.fuelMoisture <= 5 ? 'critical' as const : 'medium' as const },
+    { label: 'Wind Chill', value: `${weather.windChill}°C`, interp: 'Elevated fire spread risk', risk: 'high' as const },
+    { label: 'Fire Weather Index', value: weather.fireWeatherIndex, interp: weather.fireWeatherIndex >= 70 ? 'Extreme fire danger' : 'High fire danger', risk: weather.fireWeatherIndex >= 70 ? 'critical' as const : 'high' as const },
   ];
 
   const riskColors: Record<string, string> = {
@@ -99,7 +114,7 @@ export function Weather() {
           ))}
           <div className="ml-auto text-xs font-mono">
             <span className="text-fog">Current: </span>
-            <span style={{ color: '#FF3B30' }}>{currentWeather.fireWeatherIndex} — Extreme</span>
+            <span style={{ color: '#FF3B30' }}>{weather.fireWeatherIndex} — Extreme</span>
           </div>
         </div>
       </div>
@@ -109,7 +124,7 @@ export function Weather() {
         <div className="panel panel-glow p-5">
           <h2 className="text-sm font-semibold text-paper mb-4">Temperature & Humidity (48h)</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={weatherForecast}>
+            <LineChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,247,250,0.05)" />
               <XAxis dataKey="time" tick={{ fill: '#8FA3AD', fontSize: 10 }} />
               <YAxis tick={{ fill: '#8FA3AD', fontSize: 10 }} />
@@ -127,7 +142,7 @@ export function Weather() {
         <div className="panel panel-glow p-5">
           <h2 className="text-sm font-semibold text-paper mb-4">Wind Speed (48h)</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={weatherForecast}>
+            <LineChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,247,250,0.05)" />
               <XAxis dataKey="time" tick={{ fill: '#8FA3AD', fontSize: 10 }} />
               <YAxis tick={{ fill: '#8FA3AD', fontSize: 10 }} />

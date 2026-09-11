@@ -15,6 +15,7 @@ export interface FireEvent {
   id: string;
   name: string;
   location: string;
+  state?: string;
   lat: number;
   lng: number;
   detected: string;
@@ -25,6 +26,12 @@ export interface FireEvent {
   riskLevel: RiskLevel;
   status: FireStatus;
   area?: number;
+  frp?: number;
+  bright_ti4?: number;
+  persistence?: number;
+  nearbyCount?: number;
+  evidence?: string[];
+  sosStatus?: string;
 }
 
 export interface RiskZone {
@@ -96,6 +103,7 @@ export interface Alert {
   severity: RiskLevel;
   time: string;
   description: string;
+  sosStatus?: string;
 }
 
 export interface NavItem {

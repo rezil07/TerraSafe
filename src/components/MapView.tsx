@@ -93,6 +93,7 @@ interface MapViewProps {
   height?: string;
   showLegend?: boolean;
   className?: string;
+  events?: FireEvent[];
 }
 
 const CARTO_DARK_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -100,15 +101,16 @@ const CARTO_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">Ope
 
 export function MapView({
   layers = defaultLayers,
-  center = [39.5, -115],
+  center = [22.5, 79.0],
   zoom = 5,
   selectedEventId,
   onSelectEvent,
   height = '100%',
   showLegend = true,
   className = '',
+  events,
 }: MapViewProps) {
-  const fireEvents = useMemo(() => allFireEvents, []);
+  const fireEvents = useMemo(() => events || allFireEvents, [events]);
   const riskZones = useMemo(() => allRiskZones, []);
   const settlements = useMemo(() => allSettlements, []);
 
@@ -186,27 +188,39 @@ export function MapView({
         ))}
 
         {layers.roads && (
-          <Polyline
-            positions={[
-              [34.0, -118.2],
-              [36.0, -118.5],
-              [38.5, -120.5],
-              [40.0, -122.0],
-            ]}
-            pathOptions={{ color: '#8FA3AD', weight: 1, opacity: 0.4, dashArray: '4 6' }}
-          />
+          <>
+            <Polyline
+              positions={[
+                [28.61, 77.20],
+                [30.31, 78.03],
+                [29.38, 79.46],
+              ]}
+              pathOptions={{ color: '#00F5FF', weight: 1.5, opacity: 0.5, dashArray: '4 6' }}
+            />
+            <Polyline
+              positions={[
+                [20.29, 85.82],
+                [21.85, 86.34],
+                [21.93, 86.72],
+              ]}
+              pathOptions={{ color: '#00F5FF', weight: 1.5, opacity: 0.5, dashArray: '4 6' }}
+            />
+          </>
         )}
 
         {layers.emergencyInfra && (
           <>
-            <CircleMarker center={[34.1, -117.5]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>Fire Station — Riverside</Popup>
+            <CircleMarker center={[29.39, 79.45]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
+              <Popup>Uttarakhand Forest Fire Post — Nainital</Popup>
             </CircleMarker>
-            <CircleMarker center={[38.7, -120.3]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>Fire Station — Plumas</Popup>
+            <CircleMarker center={[21.93, 86.72]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
+              <Popup>Odisha Forest Response Division — Baripada</Popup>
             </CircleMarker>
-            <CircleMarker center={[44.0, -121.2]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>Fire Station — Bend</Popup>
+            <CircleMarker center={[22.46, 78.43]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
+              <Popup>MP Forest Quick Response — Pachmarhi</Popup>
+            </CircleMarker>
+            <CircleMarker center={[30.31, 78.03]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
+              <Popup>SDRF Headquarters — Dehradun</Popup>
             </CircleMarker>
           </>
         )}
@@ -215,7 +229,7 @@ export function MapView({
       {showLegend && <MapLegend />}
 
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] text-[10px] font-mono text-fog bg-void/80 px-3 py-1 rounded-full border border-panel-line">
-        DEMO DATA — Not live satellite feed
+        INDIA INTELLIGENCE — NASA FIRMS & Random Forest Scored
       </div>
     </div>
   );

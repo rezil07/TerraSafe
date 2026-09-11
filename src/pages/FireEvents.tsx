@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { RiskBadge, StatusBadge, ConfidenceBar, PageHeader } from '@/components/ui';
-import { fireEvents } from '@/data/mockData';
-import type { FireStatus, RiskLevel } from '@/types';
+import { fireEvents as defaultFires } from '@/data/mockData';
+import type { FireStatus, RiskLevel, FireEvent } from '@/types';
 import { ChevronUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { fetchFires } from '@/services/api';
 
 type SortKey = 'id' | 'location' | 'detected' | 'source' | 'confidence' | 'riskScore' | 'status';
 type SortDir = 'asc' | 'desc';
 
 export function FireEvents() {
+  const [firesList, setFiresList] = useState<FireEvent[]>(defaultFires);
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<FireStatus | 'all'>('all');
@@ -16,8 +18,14 @@ export function FireEvents() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [search, setSearch] = useState('');
 
+  useEffect(() => {
+    fetchFires().then((data) => {
+      if (data && data.length > 0) setFiresList(data);
+    });
+  }, []);
+
   const filtered = useMemo(() => {
-    let events = [...fireEvents];
+    let events = [...firesList];
     if (riskFilter !== 'all') events = events.filter((e) => e.riskLevel === riskFilter);
     if (sourceFilter !== 'all') events = events.filter((e) => e.source === sourceFilter);
     if (statusFilter !== 'all') events = events.filter((e) => e.status === statusFilter);
@@ -36,7 +44,7 @@ export function FireEvents() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return events;
-  }, [riskFilter, sourceFilter, statusFilter, sortKey, sortDir, search]);
+  }, [firesList, riskFilter, sourceFilter, statusFilter, sortKey, sortDir, search]);
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -130,6 +138,9 @@ export function FireEvents() {
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('status')}>
                   Status <SortIcon col="status" />
                 </th>
+                <th className="text-left px-4 py-3">
+                  SOS Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +166,11 @@ export function FireEvents() {
                     </div>
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-[11px] px-2 py-0.5 rounded border border-cyan/30 bg-cyan/10 text-cyan whitespace-nowrap">
+                      {ev.sosStatus || (ev.riskScore >= 70 ? 'ESCALATION_INITIATED' : ev.riskScore >= 40 ? 'MONITOR' : 'NO_ESCALATION')}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

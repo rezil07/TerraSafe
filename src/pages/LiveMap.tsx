@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapView, getDefaultLayers, type MapLayers } from '@/components/MapView';
 import { RiskBadge, StatusBadge, ConfidenceBar } from '@/components/ui';
-import { fireEvents } from '@/data/mockData';
-import { RISK_COLORS, type RiskLevel } from '@/types';
+import { fireEvents as defaultFires } from '@/data/mockData';
+import { RISK_COLORS, type RiskLevel, type FireEvent } from '@/types';
 import { Sliders, ChevronDown, ChevronUp } from 'lucide-react';
+import { fetchFires } from '@/services/api';
 
 export function LiveMap() {
+  const [firesList, setFiresList] = useState<FireEvent[]>(defaultFires);
   const [layers, setLayers] = useState<MapLayers>(getDefaultLayers());
   const [layersOpen, setLayersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -13,6 +15,12 @@ export function LiveMap() {
   const [source, setSource] = useState('all');
   const [minConfidence, setMinConfidence] = useState(50);
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
+
+  useEffect(() => {
+    fetchFires().then((data) => {
+      if (data && data.length > 0) setFiresList(data);
+    });
+  }, []);
 
   const layerLabels: { key: keyof MapLayers; label: string }[] = [
     { key: 'activeFires', label: 'Active Fires' },
@@ -24,20 +32,20 @@ export function LiveMap() {
     { key: 'emergencyInfra', label: 'Emergency Infrastructure' },
   ];
 
-  const filteredEvents = fireEvents.filter((e) => {
+  const filteredEvents = firesList.filter((e) => {
     if (e.confidence < minConfidence) return false;
     if (source !== 'all' && e.source !== source) return false;
     if (riskFilter !== 'all' && e.riskLevel !== riskFilter) return false;
     return true;
   });
 
-  const selectedEvent = fireEvents.find((e) => e.id === selectedId);
+  const selectedEvent = firesList.find((e) => e.id === selectedId);
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-4">
         <h1 className="text-2xl font-semibold text-paper tracking-tight">Live Map</h1>
-        <p className="text-fog text-sm mt-1">Real-time fire event map with multi-layer overlays</p>
+        <p className="text-fog text-sm mt-1">Real-time Indian wildfire map with multi-layer telemetry overlays</p>
       </div>
 
       {/* Filters bar */}
@@ -119,6 +127,7 @@ export function LiveMap() {
               selectedEventId={selectedId}
               onSelectEvent={(id) => setSelectedId(id)}
               height="100%"
+              events={filteredEvents}
             />
           </div>
 
@@ -169,6 +178,13 @@ export function LiveMap() {
                   <StatusBadge status={ev.status} />
                   <span className="text-[10px] font-mono text-fog">{ev.detectedRelative}</span>
                 </div>
+                {ev.sosStatus && (
+                  <div className="mt-1.5 flex justify-end">
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan/10 border border-cyan/25 text-cyan">
+                      SOS: {ev.sosStatus}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
             {filteredEvents.length === 0 && (
@@ -178,16 +194,28 @@ export function LiveMap() {
 
           {selectedEvent && (
             <div className="mt-3 pt-3 border-t border-panel-line">
-              <div className="text-xs text-fog mb-2">Selected Event</div>
+              <div className="text-xs text-fog mb-2">Selected Event Intelligence</div>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-fog">ID</span>
                   <span className="font-mono text-paper">{selectedEvent.id}</span>
                 </div>
+                {selectedEvent.sosStatus && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-fog">SOS Decision</span>
+                    <span className="font-mono font-semibold text-cyan">{selectedEvent.sosStatus}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs">
                   <span className="text-fog">Confidence</span>
                   <ConfidenceBar value={selectedEvent.confidence} />
                 </div>
+                {selectedEvent.frp && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-fog">Thermal FRP</span>
+                    <span className="font-mono text-paper">{selectedEvent.frp} MW</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs">
                   <span className="text-fog">Risk Score</span>
                   <span className="font-mono" style={{ color: RISK_COLORS[selectedEvent.riskLevel] }}>

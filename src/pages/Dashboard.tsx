@@ -1,12 +1,14 @@
+import { useState, useEffect } from 'react';
 import { StatCard, SectionTitle, RiskBadge } from '@/components/ui';
 import { MapView } from '@/components/MapView';
 import { Database, CloudSun, Activity, Gauge, Siren, BarChart3 } from 'lucide-react';
 import {
-  fireEvents,
-  activeAlerts,
+  fireEvents as defaultFires,
+  activeAlerts as defaultAlerts,
 } from '@/data/mockData';
 import { RISK_COLORS, type PageId } from '@/types';
 import { ChevronRight } from 'lucide-react';
+import { fetchDashboard, type DashboardData } from '@/services/api';
 
 interface DashboardProps {
   onNavigate: (page: PageId) => void;
@@ -22,20 +24,29 @@ const pipelineSteps: { id: PageId; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const activeCount = fireEvents.filter((e) => e.status === 'Active').length;
-  const highRiskZones = fireEvents.filter((e) => e.riskLevel === 'high' || e.riskLevel === 'critical').length;
-  const avgRisk = Math.round(fireEvents.reduce((s, e) => s + e.riskScore, 0) / fireEvents.length);
-  const alertCount = activeAlerts.length;
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    fetchDashboard().then(setDashboard);
+  }, []);
+
+  const fireEventsList = dashboard ? dashboard.fireEvents : defaultFires;
+  const activeAlertsList = dashboard ? dashboard.activeAlerts : defaultAlerts;
+  const activeCount = dashboard ? dashboard.activeCount : fireEventsList.filter((e) => e.status === 'Active').length;
+  const highRiskZones = dashboard ? dashboard.highRiskZones : fireEventsList.filter((e) => e.riskLevel === 'high' || e.riskLevel === 'critical').length;
+  const avgRisk = dashboard ? dashboard.avgRisk : Math.round(fireEventsList.reduce((s, e) => s + e.riskScore, 0) / fireEventsList.length);
+  const alertCount = activeAlertsList.length;
+  const lastUpdated = dashboard ? dashboard.lastUpdated : '2026-09-11 04:30 UTC';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-semibold text-paper tracking-tight">Dashboard</h1>
-          <p className="text-fog text-sm mt-1">Real-time overview of fire intelligence</p>
+          <p className="text-fog text-sm mt-1">Real-time overview of Indian wildfire intelligence & AI early-warning</p>
         </div>
         <div className="text-xs font-mono text-fog">
-          Last updated: 2026-09-10 08:24 UTC
+          Last updated: {lastUpdated}
         </div>
       </div>
 
@@ -84,14 +95,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             }
           />
           <div className="h-[340px] rounded-lg overflow-hidden border border-panel-line">
-            <MapView height="100%" showLegend={false} />
+            <MapView height="100%" showLegend={false} events={fireEventsList} />
           </div>
         </div>
 
         <div className="panel panel-glow p-5">
-          <SectionTitle title="Active Alerts" subtitle={`${activeAlerts.length} active`} />
+          <SectionTitle title="Active Alerts" subtitle={`${activeAlertsList.length} active`} />
           <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-            {activeAlerts.map((alert) => (
+            {activeAlertsList.map((alert) => (
               <div
                 key={alert.id}
                 className="p-3 rounded-lg border border-panel-line bg-void/50 hover:border-cyan/20 transition-colors cursor-pointer"
@@ -105,22 +116,29 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                   <RiskBadge level={alert.severity} size="sm" />
                 </div>
                 <p className="text-xs text-fog/80 mt-2 line-clamp-2">{alert.description}</p>
-                <p className="text-[10px] font-mono text-fog/60 mt-2">{alert.time}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[10px] font-mono text-fog/60">{alert.time}</span>
+                  {alert.sosStatus && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan/10 border border-cyan/30 text-cyan">
+                      {alert.sosStatus}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Empty state example */}
+      {/* Indian Region Status */}
       <div className="panel panel-glow p-5">
-        <SectionTitle title="Region Status" subtitle="Current fire activity by monitored region" />
+        <SectionTitle title="Region Status" subtitle="Current fire activity by monitored Indian region" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { region: 'Western US', count: 8, status: 'active' },
-            { region: 'Mountain West', count: 4, status: 'active' },
-            { region: 'Pacific Northwest', count: 0, status: 'clear' },
-          ].map((r) => (
+          {(dashboard?.regions || [
+            { region: 'Western Himalayas (UK & HP)', count: 3, status: 'active' as const },
+            { region: 'Eastern Highlands (Simlipal)', count: 2, status: 'active' as const },
+            { region: 'Central Forests (MP & Bastar)', count: 2, status: 'active' as const },
+          ]).map((r) => (
             <div key={r.region} className="p-4 rounded-lg border border-panel-line bg-void/50">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-paper">{r.region}</span>

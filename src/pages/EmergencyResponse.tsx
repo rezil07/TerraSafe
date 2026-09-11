@@ -70,12 +70,15 @@ export function EmergencyResponse() {
           <h2 className="text-sm font-semibold text-paper mb-4">Response Priority</h2>
           <div className="space-y-4">
             <div>
-              <div className="text-xs text-fog uppercase tracking-wider mb-1">Recommended Priority</div>
-              <div className="flex items-center gap-3">
+              <div className="text-xs text-fog uppercase tracking-wider mb-1">Recommended Priority & Safety Decision</div>
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="text-3xl font-bold font-mono" style={{ color: 'var(--risk-critical)' }}>
                   P1
                 </div>
                 <RiskBadge level="critical" />
+                <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-cyan/10 border border-cyan/30 text-cyan">
+                  {incident.sosStatus || 'ESCALATION_INITIATED'}
+                </span>
               </div>
             </div>
 
@@ -129,6 +132,7 @@ export function EmergencyResponse() {
             zoom={8}
             height="100%"
             showLegend={false}
+            events={[incident]}
           />
         </div>
       </div>
