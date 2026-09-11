@@ -31,3 +31,6 @@ __pycache__/
 .coverage
 htmlcov/
 backend/app/ml/model/*.joblib
+*.db
+*.sqlite
+*.sqlite3

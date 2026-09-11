@@ -175,3 +175,4 @@ export function compressAvatarImage(file: File, maxSize = 160): Promise<string> 
     reader.readAsDataURL(file);
   });
 }
+

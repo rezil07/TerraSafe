@@ -15,6 +15,7 @@ from app.services.landcover import get_landcover_for_location
 from app.services.osm import get_indian_settlements, get_indian_risk_zones, generate_indian_alerts
 from app.ml.predict import predict_risk_score, compute_contributing_factors
 from app.agents.sos_agent import sos_agent
+from app.agents.sos_memory import sos_memory
 from app.schemas.models import (
     FireEventModel,
     RiskZoneModel,
@@ -24,7 +25,12 @@ from app.schemas.models import (
     DashboardSummaryModel,
     RegionalStatusModel,
     SOSEvaluateRequest,
-    SOSEvaluateResponse
+    SOSEvaluateResponse,
+    SOSFeedbackRequest,
+    SOSFeedbackResponse,
+    SOSMetricsResponse,
+    SOSLearningReportResponse,
+    SOSPolicyResponse,
 )
 
 router = APIRouter(prefix="/api")
@@ -237,28 +243,161 @@ async def get_active_alerts():
     return generate_indian_alerts(fires)
 
 
+@router.get("/sos/status", tags=["SOS Safety Agent"])
+async def get_sos_agent_status():
+    """
+    Operational status of the TerraSafe Deterministic SOS Decision Agent.
+    Strictly SIMULATION ONLY: No real emergency services contacted.
+    """
+    metrics = sos_memory.get_metrics()
+    return {
+        "status": "active",
+        "agent": "TerraSafe SOS Decision Agent",
+        "mode": "SIMULATION ONLY",
+        "policy_version": sos_agent.policy_version,
+        "total_decisions_recorded": metrics["total_decisions"],
+        "feedback_records_accumulated": metrics["feedback_records"],
+        "safety_guardrails": {
+            "no_emergency_calling": True,
+            "no_sms_dispatch": True,
+            "no_external_apis": True,
+            "staleness_limit_hours": sos_agent.staleness_limit,
+            "min_confidence_threshold": sos_agent.min_confidence,
+            "high_frp_threshold_mw": sos_agent.high_frp,
+            "min_persistence_passes": sos_agent.min_persistence,
+        }
+    }
+
+
 @router.post("/sos/evaluate", response_model=SOSEvaluateResponse, tags=["SOS Safety Agent"])
 async def evaluate_incident_safety(req: SOSEvaluateRequest):
     """
-    Dedicated endpoint for the Deterministic SOS Safety Agent.
+    Dedicated evaluation endpoint for the Deterministic SOS Safety Agent.
     Evaluates evidence sufficiency, staleness, and corroboration before sanctioning escalation.
+    GUARANTEE: Pure simulation, no external emergency service contacted.
     """
     eval_result = sos_agent.evaluate(
         risk_score=req.risk_score,
         satellite=req.satellite,
         weather=req.weather,
         landcover=req.landcover,
-        staleness_hours=req.staleness_hours
+        staleness_hours=req.staleness_hours,
+        event_id=req.event_id,
+        location_name=req.location_name or "India Sector"
     )
     return SOSEvaluateResponse(
+        decision_id=eval_result.decision_id,
+        event_id=eval_result.event_id,
         risk_score=eval_result.risk_score,
         risk_level=eval_result.risk_level,
-        sos_status=eval_result.sos_status,
+        agent_score=eval_result.agent_score,
+        decision=eval_result.decision,
+        sos_status=eval_result.decision,
         action_summary=eval_result.action_summary,
+        simulation_action=eval_result.simulation_action,
+        mode=eval_result.mode,
         evidence_strength=eval_result.evidence_strength,
         evidence_points=eval_result.evidence_points,
+        evidence=eval_result.evidence,
         reasons=eval_result.reasons,
         escalation_ready=eval_result.escalation_ready,
-        data_quality=eval_result.data_quality
+        data_quality=eval_result.data_quality,
+        agent_version=eval_result.agent_version,
+        timestamp=eval_result.timestamp
+    )
+
+
+@router.post("/sos/feedback", response_model=SOSFeedbackResponse, tags=["SOS Safety Agent"])
+async def submit_simulated_feedback(req: SOSFeedbackRequest):
+    """
+    Submit simulated ground-truth feedback for an SOS decision.
+    Categorizes errors into OVER_ESCALATION or UNDER_ESCALATION to inform the learning cycle.
+    """
+    try:
+        res = sos_memory.record_feedback(
+            decision_id=req.decision_id,
+            feedback_outcome=req.feedback,
+            notes=req.notes or ""
+        )
+        return SOSFeedbackResponse(
+            decision_id=res["decision_id"],
+            event_id=res["event_id"],
+            decision=res["decision"],
+            feedback_outcome=res["feedback_outcome"],
+            error_type=res["error_type"],
+            timestamp=res["timestamp"],
+            mode=res["mode"],
+            notes=res["notes"]
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/sos/history", tags=["SOS Safety Agent"])
+async def get_sos_history(limit: int = Query(50, description="Max history entries")):
+    """Audit log of past SOS decisions, multi-source evidence, and simulated feedback."""
+    return sos_memory.get_history(limit=limit)
+
+
+@router.get("/sos/metrics", response_model=SOSMetricsResponse, tags=["SOS Safety Agent"])
+async def get_sos_metrics():
+    """
+    Calculates empirical decision and error statistics.
+    Returns 'Insufficient feedback data' if sample size is too small, rather than inventing accuracy.
+    """
+    metrics = sos_memory.get_metrics()
+    return SOSMetricsResponse(**metrics)
+
+
+@router.post("/sos/learn", response_model=SOSLearningReportResponse, tags=["SOS Safety Agent"])
+async def trigger_learning_cycle():
+    """
+    Executes a controlled learning cycle:
+    Analyzes historical errors, identifies corroboration patterns,
+    proposes policy adjustments, and increments policy version (e.g. sos_policy_v1 -> sos_policy_v2).
+    """
+    report = sos_agent.run_learning_cycle()
+    return SOSLearningReportResponse(**report)
+
+
+@router.get("/sos/learning-report", tags=["SOS Safety Agent"])
+async def get_latest_learning_report():
+    """Fetch the latest learning report and policy changelog."""
+    report = sos_memory.get_latest_learning_report()
+    if not report:
+        return {
+            "status": "No learning cycles executed yet.",
+            "mode": "SIMULATION ONLY",
+            "active_policy_version": sos_agent.policy_version
+        }
+    return report
+
+
+@router.get("/sos/policy", response_model=SOSPolicyResponse, tags=["SOS Safety Agent"])
+async def get_active_policy():
+    """Inspect active SOS decision policy rules, weights, and version details."""
+    latest = sos_memory.get_latest_policy()
+    if latest:
+        return SOSPolicyResponse(
+            version=latest["version"],
+            created_at=latest["created_at"],
+            reason=latest["reason"],
+            parameters=latest["parameters"],
+            changes=latest["changes"],
+            mode="SIMULATION ONLY"
+        )
+    return SOSPolicyResponse(
+        version=sos_agent.policy_version,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        reason="Default calibrated baseline policy.",
+        parameters={
+            "staleness_limit_hours": sos_agent.staleness_limit,
+            "high_frp_threshold": sos_agent.high_frp,
+            "min_persistence": sos_agent.min_persistence,
+            "min_confidence": sos_agent.min_confidence,
+            "nearby_cluster_threshold": sos_agent.nearby_cluster_threshold
+        },
+        changes=["Baseline India bounding box weights."],
+        mode="SIMULATION ONLY"
     )
 

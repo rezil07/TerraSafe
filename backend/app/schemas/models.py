@@ -109,16 +109,88 @@ class SOSEvaluateRequest(BaseModel):
     weather: Dict[str, Any]
     landcover: Optional[Dict[str, Any]] = None
     staleness_hours: float = 0.0
+    event_id: Optional[str] = None
+    location_name: Optional[str] = "India Sector"
 
 
 class SOSEvaluateResponse(BaseModel):
+    decision_id: str
+    event_id: str
     risk_score: float
     risk_level: str
+    agent_score: int
+    decision: str
     sos_status: str
     action_summary: str
+    simulation_action: str
+    mode: str = "SIMULATION ONLY"
     evidence_strength: str
     evidence_points: int
+    evidence: Dict[str, bool]
     reasons: List[str]
     escalation_ready: bool
     data_quality: Dict[str, Any]
+    agent_version: str
+    timestamp: str
+
+
+class SOSFeedbackRequest(BaseModel):
+    decision_id: str
+    feedback: str  # 'TRUE_POSITIVE' | 'FALSE_POSITIVE' | 'TRUE_NEGATIVE' | 'FALSE_NEGATIVE' | 'UNKNOWN'
+    notes: Optional[str] = ""
+
+
+class SOSFeedbackResponse(BaseModel):
+    decision_id: str
+    event_id: str
+    decision: str
+    feedback_outcome: str
+    error_type: str
+    timestamp: str
+    mode: str = "SIMULATION ONLY"
+    notes: str = ""
+
+
+class SOSMetricsResponse(BaseModel):
+    total_decisions: int
+    breakdown: Dict[str, int]
+    feedback_records: int
+    has_sufficient_data: bool
+    status_message: str
+    true_positives: Optional[int] = None
+    false_positives: Optional[int] = None
+    true_negatives: Optional[int] = None
+    false_negatives: Optional[int] = None
+    over_escalations: int
+    under_escalations: int
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    false_positive_rate: Optional[float] = None
+    false_negative_rate: Optional[float] = None
+    mode: str = "SIMULATION ONLY"
+    disclaimer: str
+
+
+class SOSLearningReportResponse(BaseModel):
+    report_id: str
+    timestamp: str
+    analyzed_count: int
+    over_escalations: int
+    under_escalations: int
+    insights: List[str]
+    proposed_adjustments: List[str]
+    policy_promoted: bool
+    active_policy_version: str
+    mode: str = "SIMULATION ONLY"
+    message: str
+
+
+class SOSPolicyResponse(BaseModel):
+    version: str
+    created_at: str
+    reason: str
+    parameters: Dict[str, Any]
+    changes: List[str]
+    mode: str = "SIMULATION ONLY"
+
 
