@@ -62,10 +62,18 @@ async def root():
     return {
         "message": "Welcome to TerraSafe AI Wildfire Intelligence Platform",
         "docs": "/docs",
-        "health": "/api/health",
+        "health": "/health",
+        "api_health": "/api/health",
         "dashboard": "/api/dashboard",
         "fires": "/api/fires"
     }
+
+
+@app.get("/health", tags=["System"])
+async def root_health():
+    """Root health check endpoint for monitoring systems and container probes."""
+    from app.api.endpoints import health_check
+    return await health_check()
 
 
 if __name__ == "__main__":
