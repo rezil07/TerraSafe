@@ -1,0 +1,78 @@
+{
+  "model_name": "TerraSafe Random Forest Wildfire Risk Scorer",
+  "model_type": "CalibratedClassifierCV(RandomForestClassifier, method='isotonic')",
+  "created_at_utc": "2026-09-11T01:18:44.660084+00:00",
+  "n_samples": 2000,
+  "n_features": 18,
+  "feature_columns": [
+    "bright_ti4",
+    "frp",
+    "confidence",
+    "nearby_detection_count",
+    "detection_persistence",
+    "temperature",
+    "relative_humidity",
+    "wind_speed",
+    "wind_direction",
+    "precipitation",
+    "dry_days",
+    "temp_anomaly",
+    "humidity_deficit",
+    "landcover_risk",
+    "elevation",
+    "slope",
+    "dist_to_settlement_km",
+    "historical_frequency"
+  ],
+  "feature_importances": {
+    "confidence": 0.247,
+    "frp": 0.2026,
+    "precipitation": 0.15,
+    "humidity_deficit": 0.1295,
+    "dry_days": 0.0765,
+    "bright_ti4": 0.0509,
+    "relative_humidity": 0.05,
+    "historical_frequency": 0.0288,
+    "landcover_risk": 0.0249,
+    "nearby_detection_count": 0.0152,
+    "detection_persistence": 0.0128,
+    "temp_anomaly": 0.0106,
+    "temperature": 0.0013,
+    "wind_speed": 0.0,
+    "wind_direction": 0.0,
+    "elevation": 0.0,
+    "slope": 0.0,
+    "dist_to_settlement_km": 0.0
+  },
+  "target_data_rule_compliance": {
+    "target_type": "proxy_hotspot_wildfire_risk",
+    "proxy_description": "Synthetic and regional satellite hotspot composite combining NASA FIRMS thermal observations (FRP, brightness temperature, confidence) with fire weather conditions (temperature anomaly, humidity deficit, wind) and fuel vulnerability.",
+    "verified_ground_truth": false,
+    "limitation_statement": "This target functions strictly as an early-warning risk proxy. Satellite hotspots identify thermal anomalies that include controlled agricultural burns, prescribed fires, and industrial heat sources in addition to genuine wildfires. Unconfirmed satellite observations are not treated as ground-verified wildfires."
+  },
+  "evaluation_metrics": {
+    "cross_validation_5fold_roc_auc_mean": 1.0,
+    "cross_validation_5fold_roc_auc_std": 0.0,
+    "cross_validation_brier_score": 0.0,
+    "test_roc_auc": 1.0,
+    "test_brier_score": 0.0,
+    "test_accuracy": 1.0,
+    "test_precision": 1.0,
+    "test_recall": 1.0,
+    "test_f1_score": 1.0
+  },
+  "risk_thresholds": {
+    "WATCH": [
+      0.0,
+      39.0
+    ],
+    "ELEVATED": [
+      40.0,
+      69.0
+    ],
+    "CRITICAL": [
+      70.0,
+      100.0
+    ]
+  }
+}
