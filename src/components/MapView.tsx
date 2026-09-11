@@ -7,7 +7,8 @@ import {
   Polyline,
 } from 'react-leaflet';
 import L from 'leaflet';
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useMap } from 'react-leaflet';
 import {
   fireEvents as allFireEvents,
   riskZones as allRiskZones,
@@ -39,31 +40,31 @@ export function getDefaultLayers() {
   return { ...defaultLayers };
 }
 
-// Fix default marker icon
+// Marker icons
 const fireIcon = L.divIcon({
   className: 'fire-marker',
-  html: '<div style="width:14px;height:14px;border-radius:50%;background:#FF3B30;box-shadow:0 0 8px #FF3B30,0 0 4px #FF6A3D;border:1.5px solid rgba(255,255,255,0.3);"></div>',
+  html: '<div style="width:14px;height:14px;border-radius:50%;background:#FF3B30;box-shadow:0 0 10px #FF3B30,0 0 5px #FF6A3D;border:2px solid rgba(255,255,255,0.7);animation:pulse-dot 2s infinite;"></div>',
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 });
 
 const containedIcon = L.divIcon({
   className: 'fire-marker',
-  html: '<div style="width:12px;height:12px;border-radius:50%;background:#FFB020;box-shadow:0 0 6px #FFB020;border:1.5px solid rgba(255,255,255,0.3);"></div>',
+  html: '<div style="width:12px;height:12px;border-radius:50%;background:#FFB020;box-shadow:0 0 8px #FFB020;border:1.5px solid rgba(255,255,255,0.5);"></div>',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
 });
 
 const monitoredIcon = L.divIcon({
   className: 'fire-marker',
-  html: '<div style="width:12px;height:12px;border-radius:50%;background:#00F5FF;box-shadow:0 0 6px #00F5FF;border:1.5px solid rgba(255,255,255,0.3);"></div>',
+  html: '<div style="width:12px;height:12px;border-radius:50%;background:#00F5FF;box-shadow:0 0 8px #00F5FF;border:1.5px solid rgba(255,255,255,0.5);"></div>',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
 });
 
 const controlledIcon = L.divIcon({
   className: 'fire-marker',
-  html: '<div style="width:10px;height:10px;border-radius:50%;background:#00FF88;box-shadow:0 0 4px #00FF88;border:1.5px solid rgba(255,255,255,0.2);"></div>',
+  html: '<div style="width:10px;height:10px;border-radius:50%;background:#00FF88;box-shadow:0 0 6px #00FF88;border:1.5px solid rgba(255,255,255,0.3);"></div>',
   iconSize: [10, 10],
   iconAnchor: [5, 5],
 });
@@ -76,12 +77,11 @@ const settlementIcon = L.divIcon({
 });
 
 function getFireIcon(ev: FireEvent) {
-  switch (ev.status) {
-    case 'Active': return fireIcon;
-    case 'Contained': return containedIcon;
-    case 'Monitored': return monitoredIcon;
-    case 'Controlled': return controlledIcon;
-  }
+  const s = (ev.status || '').toLowerCase();
+  if (s === 'active') return fireIcon;
+  if (s === 'contained') return containedIcon;
+  if (s === 'controlled') return controlledIcon;
+  return monitoredIcon;
 }
 
 interface MapViewProps {
@@ -96,8 +96,76 @@ interface MapViewProps {
   events?: FireEvent[];
 }
 
-const CARTO_DARK_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const CARTO_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// 100% free, high-performance Esri Basemaps (No API key, No watermarks)
+const ESRI_DARK_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const ESRI_DARK_REF_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+const ESRI_SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const ESRI_ATTR = '&copy; <a href="https://www.esri.com">Esri</a> &mdash; Earthstar Geographics';
+
+/**
+ * Controller to handle dynamic bounds fitting and resize invalidation
+ */
+function MapController({
+  center,
+  zoom,
+  events,
+  selectedEventId,
+}: {
+  center: [number, number];
+  zoom: number;
+  events: FireEvent[];
+  selectedEventId?: string | null;
+}) {
+  const map = useMap();
+
+  // Fix partial square tile bug when rendering inside flex/grid tabs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  // Pan to selected event if clicked
+  useEffect(() => {
+    if (selectedEventId) {
+      const target = events.find((e) => e.id === selectedEventId);
+      if (target) {
+        map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 7), { duration: 1.0 });
+      }
+    }
+  }, [selectedEventId, events, map]);
+
+  // Auto-fit bounds to actual active detections across India
+  useEffect(() => {
+    if (!events || events.length === 0) {
+      map.setView(center, zoom);
+      return;
+    }
+    const valid = events.filter((e) => e.lat >= 6 && e.lat <= 38 && e.lng >= 68 && e.lng <= 98);
+    if (valid.length > 0) {
+      const lats = valid.map((e) => e.lat);
+      const lngs = valid.map((e) => e.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      const latPad = Math.max(1.0, (maxLat - minLat) * 0.2);
+      const lngPad = Math.max(1.0, (maxLng - minLng) * 0.2);
+
+      map.fitBounds(
+        [
+          [Math.max(6.0, minLat - latPad), Math.max(68.0, minLng - lngPad)],
+          [Math.min(37.5, maxLat + latPad), Math.min(98.0, maxLng + lngPad)],
+        ],
+        { padding: [35, 35], maxZoom: 8 }
+      );
+    }
+  }, [events, map, center, zoom]);
+
+  return null;
+}
 
 export function MapView({
   layers = defaultLayers,
@@ -110,22 +178,67 @@ export function MapView({
   className = '',
   events,
 }: MapViewProps) {
+  const [basemap, setBasemap] = useState<'dark' | 'satellite'>('dark');
   const fireEvents = useMemo(() => events || allFireEvents, [events]);
   const riskZones = useMemo(() => allRiskZones, []);
   const settlements = useMemo(() => allSettlements, []);
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
+      {/* Basemap Switcher Pill */}
+      <div className="absolute top-3 left-14 z-[500] flex items-center bg-void/90 p-1 rounded-lg border border-panel-line text-xs shadow-lg">
+        <button
+          type="button"
+          onClick={() => setBasemap('dark')}
+          className={`px-2.5 py-1 rounded transition-colors ${
+            basemap === 'dark' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+          }`}
+        >
+          Tactical Dark
+        </button>
+        <button
+          type="button"
+          onClick={() => setBasemap('satellite')}
+          className={`px-2.5 py-1 rounded transition-colors ${
+            basemap === 'satellite' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+          }`}
+        >
+          Satellite
+        </button>
+      </div>
+
       <MapContainer
         center={center}
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom
       >
-        <TileLayer
-          url={CARTO_DARK_URL}
-          attribution={CARTO_ATTR}
+        <MapController
+          center={center}
+          zoom={zoom}
+          events={fireEvents}
+          selectedEventId={selectedEventId}
         />
+
+        {basemap === 'dark' ? (
+          <>
+            <TileLayer
+              url={ESRI_DARK_URL}
+              attribution={ESRI_ATTR}
+              maxZoom={16}
+            />
+            <TileLayer
+              url={ESRI_DARK_REF_URL}
+              maxZoom={16}
+            />
+          </>
+        ) : (
+          <TileLayer
+            url={ESRI_SATELLITE_URL}
+            attribution={ESRI_ATTR}
+            maxZoom={18}
+          />
+        )}
 
         {layers.activeFires && fireEvents.map((ev) => (
           <Marker

@@ -201,8 +201,10 @@ async def fetch_firms_hotspots(max_records: int = 50) -> List[FireEventModel]:
     urls_to_try = []
     if settings.FIRMS_API_KEY and settings.FIRMS_API_KEY.strip():
         key = settings.FIRMS_API_KEY.strip()
-        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{key}/VIIRS_SNPP_NRT/IND/1")
-        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{key}/MODIS_NRT/IND/1")
+        # NASA FIRMS Area API: /api/area/csv/{map_key}/{source}/{west,south,east,north}/{day_range}
+        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/VIIRS_SNPP_NRT/68,6,98,38/3")
+        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/VIIRS_NOAA20_NRT/68,6,98,38/3")
+        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/MODIS_NRT/68,6,98,38/3")
     urls_to_try.append("https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_South_Asia_24h.csv")
 
     raw_hotspots = []
@@ -223,13 +225,18 @@ async def fetch_firms_hotspots(max_records: int = 50) -> List[FireEventModel]:
                                     continue
 
                                 frp = float(row.get("frp", 10.0))
-                                bright_ti4 = float(row.get("bright_ti4", 325.0))
+                                # VIIRS uses bright_ti4; MODIS uses brightness
+                                bright_val = float(row.get("bright_ti4") or row.get("brightness") or 325.0)
                                 conf_str = row.get("confidence", "nominal")
                                 acq_date = row.get("acq_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
                                 acq_time = row.get("acq_time", "1200")
                                 ts = parse_firms_timestamp(acq_date, acq_time)
 
                                 state_info = resolve_indian_state(lat, lng)
+                                norm_conf = normalize_confidence(conf_str)
+
+                                # Classify Active vs Monitored: FRP >= 4MW or high confidence indicates active thermal detection
+                                is_active = (frp >= 4.0) or (bright_val >= 330.0) or (norm_conf >= 70.0)
 
                                 raw_hotspots.append({
                                     "id": f"FIRE-IND-{idx:03d}",
@@ -238,14 +245,14 @@ async def fetch_firms_hotspots(max_records: int = 50) -> List[FireEventModel]:
                                     "state": state_info["state"],
                                     "lat": lat,
                                     "lng": lng,
-                                    "source": "VIIRS",
-                                    "confidence": normalize_confidence(conf_str),
+                                    "source": "VIIRS" if "bright_ti4" in row else "MODIS",
+                                    "confidence": norm_conf,
                                     "frp": frp,
-                                    "bright_ti4": bright_ti4,
+                                    "bright_ti4": bright_val,
                                     "timestamp": ts,
                                     "detected": ts.isoformat(),
                                     "detectedRelative": f"{max(1, int(compute_staleness_hours(ts)))}h ago",
-                                    "status": "Active" if frp > 15 else "Monitored",
+                                    "status": "Active" if is_active else "Monitored",
                                     "area": round(frp * 8.5, 1),
                                 })
                                 idx += 1

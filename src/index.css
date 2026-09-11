@@ -106,6 +106,23 @@
 .leaflet-container {
   background: #06131a !important;
   font-family: 'Space Grotesk', sans-serif !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+.fire-marker {
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.settlement-marker {
+  background: transparent !important;
+  border: none !important;
 }
 .leaflet-control-zoom a {
   background: #06131a !important;
