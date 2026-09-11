@@ -98,11 +98,11 @@ export function FireEvents({ searchQuery = '', onSearchChange }: FireEventsProps
           </div>
         )}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
           <select
             value={riskFilter}
             onChange={(e) => setRiskFilter(e.target.value as RiskLevel | 'all')}
-            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+            className="bg-void border border-panel-line rounded-lg px-2.5 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40 flex-1 sm:flex-initial"
           >
             <option value="all">All Risk Levels</option>
             <option value="low">Low (0–39)</option>
@@ -113,7 +113,7 @@ export function FireEvents({ searchQuery = '', onSearchChange }: FireEventsProps
           <select
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
-            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+            className="bg-void border border-panel-line rounded-lg px-2.5 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40 flex-1 sm:flex-initial"
           >
             <option value="all">All Sources</option>
             <option value="NASA FIRMS">NASA FIRMS</option>
@@ -125,7 +125,7 @@ export function FireEvents({ searchQuery = '', onSearchChange }: FireEventsProps
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as FireStatus | 'all')}
-            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+            className="bg-void border border-panel-line rounded-lg px-2.5 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40 flex-1 sm:flex-initial"
           >
             <option value="all">All Status</option>
             <option value="Active">Active</option>
@@ -139,7 +139,7 @@ export function FireEvents({ searchQuery = '', onSearchChange }: FireEventsProps
       {/* Table */}
       <div className="panel panel-glow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-panel-line text-xs uppercase tracking-wider text-fog">
                 <th className="text-left px-3 py-3 w-16">Sr. No.</th>

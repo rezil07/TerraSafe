@@ -22,17 +22,28 @@
     box-sizing: border-box;
   }
 
+  html {
+    scroll-behavior: smooth;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     margin: 0;
+    width: 100%;
+    overflow-x: hidden;
     background: var(--void-solid);
     color: var(--paper);
     font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
   }
 
   #root {
     min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
   }
 }
 

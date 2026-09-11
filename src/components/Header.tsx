@@ -19,11 +19,11 @@ export function Header({
   onSearchFocus,
 }: HeaderProps) {
   return (
-    <header className="h-14 panel border-l-0 border-r-0 border-t-0 flex items-center justify-between px-4 md:px-6 gap-4 flex-shrink-0">
-      <div className="flex items-center gap-3 flex-1 max-w-2xl">
+    <header className="h-14 panel border-l-0 border-r-0 border-t-0 flex items-center justify-between px-3 md:px-6 gap-2 sm:gap-4 flex-shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-2xl min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="md:hidden text-fog hover:text-cyan transition-colors"
+          className="md:hidden text-fog hover:text-cyan transition-colors p-1"
           aria-label="Toggle sidebar"
         >
           <Menu className="w-5 h-5" />
@@ -40,8 +40,8 @@ export function Header({
         </button>
 
         {/* Primary Fire Events Search Bar on top */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan/70 pointer-events-none" />
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-cyan/70 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
@@ -51,14 +51,14 @@ export function Header({
             onFocus={() => {
               onSearchFocus?.();
             }}
-            placeholder="Search fire events by sector, district, state, or ID..."
-            className="w-full bg-void border border-panel-line rounded-lg pl-9 pr-8 py-1.5 text-xs sm:text-sm text-paper placeholder-fog/60 focus:outline-none focus:border-cyan/50 focus:ring-1 focus:ring-cyan/30 transition-all shadow-inner"
+            placeholder="Search fire events, sectors, IDs..."
+            className="w-full bg-void border border-panel-line rounded-lg pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 text-xs sm:text-sm text-paper placeholder-fog/60 focus:outline-none focus:border-cyan/50 focus:ring-1 focus:ring-cyan/30 transition-all shadow-inner truncate"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => onSearchChange?.('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fog hover:text-paper text-xs p-0.5 rounded transition-colors"
+              className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-fog hover:text-paper text-xs p-0.5 rounded transition-colors"
               title="Clear search"
             >
               <X className="w-3.5 h-3.5" />

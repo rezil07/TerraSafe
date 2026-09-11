@@ -37,7 +37,7 @@ export function RiskAnalysis() {
             <span className="text-sm font-semibold text-paper">Click a fire event to analyze</span>
             <span className="text-xs font-mono text-fog">Click-to-analyze enabled</span>
           </div>
-          <div className="h-[520px] rounded-lg overflow-hidden">
+          <div className="h-[380px] sm:h-[450px] lg:h-[520px] rounded-lg overflow-hidden">
             <MapView
               height="100%"
               showLegend={false}

@@ -126,7 +126,7 @@ export function LiveMap() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Expanded Map View (takes 3/4 width on desktop) */}
         <div className="lg:col-span-3 panel panel-glow p-1 relative">
-          <div className="h-[680px] rounded-lg overflow-hidden">
+          <div className="h-[420px] sm:h-[540px] lg:h-[680px] rounded-lg overflow-hidden">
             <MapView
               layers={layers}
               selectedEventId={selectedId}
@@ -155,8 +155,8 @@ export function LiveMap() {
           )}
         </div>
 
-        {/* Events list (sidebar taking 1/4 width) */}
-        <div className="panel panel-glow p-4 flex flex-col" style={{ maxHeight: '680px' }}>
+        {/* Events list (sidebar taking 1/4 width on desktop, stacked on mobile) */}
+        <div className="panel panel-glow p-4 flex flex-col max-h-[440px] lg:max-h-[680px]">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-paper">Fire Events</h2>
             <p className="text-xs text-fog mt-0.5">{filteredEvents.length} events on map</p>

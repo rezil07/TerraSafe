@@ -126,7 +126,7 @@ export function EmergencyResponse() {
           <h2 className="text-sm font-semibold text-paper">Incident Map</h2>
           <span className="text-xs font-mono text-fog">Fire location and spread direction</span>
         </div>
-        <div className="h-[480px] rounded-lg overflow-hidden">
+        <div className="h-[340px] sm:h-[420px] lg:h-[480px] rounded-lg overflow-hidden">
           <MapView
             center={[incident.lat, incident.lng]}
             zoom={8}

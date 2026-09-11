@@ -67,7 +67,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
           animate={showUI ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
           transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
-          className="terrasafe-wordmark text-5xl md:text-7xl lg:text-[5.5rem] leading-none"
+          className="terrasafe-wordmark text-4xl sm:text-5xl md:text-7xl lg:text-[5.5rem] leading-none text-center px-4"
           style={{
             textShadow: '0 0 40px rgba(0,245,255,0.5), 0 0 80px rgba(0,245,255,0.2), 0 2px 4px rgba(0,0,0,0.5)',
           }}
@@ -80,13 +80,13 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           initial={{ width: 0, opacity: 0 }}
           animate={showUI ? { width: '200px', opacity: 1 } : {}}
           transition={{ duration: 0.9, ease: 'easeOut', delay: 0.7 }}
-          className="h-px mt-6"
+          className="h-px mt-4 sm:mt-6"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(0,245,255,0.6), transparent)' }}
         />
       </div>
 
       {/* ========== BOTTOM: BUTTON ========== */}
-      <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center pb-10 md:pb-12">
+      <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center pb-8 sm:pb-12 px-4">
         <AnimatePresence>
           {showUI && !entering && (
             <motion.button
@@ -95,7 +95,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.25 } }}
               transition={{ duration: 0.7, ease: 'easeOut', delay: 0.4 }}
               onClick={handleEnter}
-              className="group relative flex items-center gap-3 px-7 md:px-9 py-3.5 md:py-4 pointer-events-auto"
+              className="group relative flex items-center gap-2 sm:gap-3 px-6 sm:px-9 py-3 sm:py-4 pointer-events-auto"
               style={{
                 borderRadius: '4px',
                 border: '1px solid rgba(0,245,255,0.4)',

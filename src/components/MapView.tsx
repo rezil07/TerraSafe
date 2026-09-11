@@ -376,7 +376,7 @@ export function MapView({
         )}
       </MapContainer>
 
-      {/* Non-intrusive Floating Telemetric HUD (docked at bottom-left, never blocks top controls or map) */}
+      {/* Non-intrusive Floating Telemetric HUD (responsive for mobile, tablet, and desktop) */}
       {isHudOpen && activeSelectedId && (() => {
         const selectedEvent = fireEvents.find((e) => e.id === activeSelectedId);
         if (!selectedEvent) return null;
@@ -384,47 +384,47 @@ export function MapView({
         const levelLabel = selectedEvent.riskScore >= 70 ? 'CRITICAL / CONFIRMED' : (selectedEvent.riskScore >= 40 ? 'MEDIUM RISK' : 'LOW / WATCH');
 
         return (
-          <div className="absolute bottom-8 left-4 z-[500] panel p-3 w-80 bg-void/95 backdrop-blur-md border border-panel-line shadow-2xl rounded-xl transition-all">
-            <div className="flex items-start justify-between gap-2 border-b border-panel-line pb-2 mb-2.5">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-paper truncate">{selectedEvent.name}</div>
-                <div className="text-xs text-fog truncate">{selectedEvent.location}</div>
+          <div className="absolute bottom-5 sm:bottom-8 left-2 sm:left-4 z-[500] panel p-2.5 sm:p-3 w-[calc(100%-1rem)] max-w-[360px] sm:w-80 bg-void/95 backdrop-blur-md border border-panel-line shadow-2xl rounded-xl transition-all">
+            <div className="flex items-start justify-between gap-2 border-b border-panel-line pb-2 mb-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-xs sm:text-sm font-semibold text-paper truncate">{selectedEvent.name}</div>
+                <div className="text-[10px] sm:text-xs text-fog truncate">{selectedEvent.location}</div>
               </div>
               <button
                 type="button"
                 onClick={handleCloseHud}
-                className="text-fog hover:text-paper text-xs px-1.5 py-0.5 rounded border border-panel-line hover:bg-panel transition-colors"
+                className="text-fog hover:text-paper text-xs px-1.5 py-0.5 rounded border border-panel-line hover:bg-panel transition-colors flex-shrink-0"
                 title="Close Inspector"
               >
                 ✕
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
-                <span className="text-[10px] uppercase tracking-wider text-fog block">Wildfire Risk</span>
-                <span className="font-bold text-base block mt-0.5" style={{ color }}>
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+              <div className="bg-panel/70 p-1.5 sm:p-2 rounded-lg border border-panel-line">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-fog block">Wildfire Risk</span>
+                <span className="font-bold text-sm sm:text-base block mt-0.5" style={{ color }}>
                   {selectedEvent.riskScore}/100
                 </span>
-                <span className="text-[9px] font-mono text-fog block">{levelLabel}</span>
+                <span className="text-[8px] sm:text-[9px] font-mono text-fog block truncate">{levelLabel}</span>
               </div>
-              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
-                <span className="text-[10px] uppercase tracking-wider text-fog block">Confidence</span>
-                <span className="font-mono text-base text-cyan block mt-0.5">{selectedEvent.confidence}%</span>
-                <span className="text-[9px] font-mono text-fog block">Sensor: {selectedEvent.source}</span>
+              <div className="bg-panel/70 p-1.5 sm:p-2 rounded-lg border border-panel-line">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-fog block">Confidence</span>
+                <span className="font-mono text-sm sm:text-base text-cyan block mt-0.5">{selectedEvent.confidence}%</span>
+                <span className="text-[8px] sm:text-[9px] font-mono text-fog block truncate">Sensor: {selectedEvent.source}</span>
               </div>
-              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
-                <span className="text-[10px] uppercase tracking-wider text-fog block">GPS Coordinates</span>
-                <span className="font-mono text-xs text-paper block mt-1">
+              <div className="bg-panel/70 p-1.5 sm:p-2 rounded-lg border border-panel-line">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-fog block">GPS Coordinates</span>
+                <span className="font-mono text-[10px] sm:text-xs text-paper block mt-0.5 leading-tight">
                   {selectedEvent.lat.toFixed(4)}° N<br />{selectedEvent.lng.toFixed(4)}° E
                 </span>
               </div>
-              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
-                <span className="text-[10px] uppercase tracking-wider text-fog block">SOS State</span>
-                <span className="font-mono text-[10px] font-semibold text-cyan block mt-1 truncate">
+              <div className="bg-panel/70 p-1.5 sm:p-2 rounded-lg border border-panel-line">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-fog block">SOS State</span>
+                <span className="font-mono text-[9px] sm:text-[10px] font-semibold text-cyan block mt-0.5 truncate">
                   {selectedEvent.sosStatus || 'MONITOR'}
                 </span>
                 {selectedEvent.frp !== undefined && (
-                  <span className="text-[9px] font-mono text-fog block mt-0.5">FRP: {selectedEvent.frp} MW</span>
+                  <span className="text-[8px] sm:text-[9px] font-mono text-fog block mt-0.5 truncate">FRP: {selectedEvent.frp} MW</span>
                 )}
               </div>
             </div>
@@ -434,7 +434,7 @@ export function MapView({
 
       {showLegend && <MapLegend />}
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] text-[10px] font-mono text-fog bg-void/80 px-3 py-1 rounded-full border border-panel-line">
+      <div className="hidden sm:block absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] text-[10px] font-mono text-fog bg-void/80 px-3 py-1 rounded-full border border-panel-line pointer-events-none whitespace-nowrap">
         INDIA INTELLIGENCE — NASA FIRMS & Random Forest Scored
       </div>
     </div>
@@ -443,23 +443,23 @@ export function MapView({
 
 function MapLegend() {
   return (
-    <div className="absolute top-3 right-3 z-[500] panel p-3 text-xs space-y-2 max-w-[210px] bg-void/90 backdrop-blur border border-panel-line shadow-lg">
-      <div className="text-fog uppercase tracking-wider text-[10px] font-semibold mb-1">Wildfire Risk Tiers</div>
+    <div className="absolute top-12 sm:top-3 right-2 sm:right-3 z-[500] panel p-2.5 sm:p-3 text-xs space-y-1.5 sm:space-y-2 max-w-[190px] sm:max-w-[210px] bg-void/90 backdrop-blur border border-panel-line shadow-lg">
+      <div className="text-fog uppercase tracking-wider text-[9px] sm:text-[10px] font-semibold mb-1">Wildfire Risk Tiers</div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FF3B30', boxShadow: '0 0 6px #FF3B30' }} />
-        <span className="text-paper text-xs">High / Confirmed (70–100)</span>
+        <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0" style={{ background: '#FF3B30', boxShadow: '0 0 6px #FF3B30' }} />
+        <span className="text-paper text-[11px] sm:text-xs">High / Confirmed (70–100)</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FF7A00', boxShadow: '0 0 6px #FF7A00' }} />
-        <span className="text-paper text-xs">Medium Risk (40–69)</span>
+        <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0" style={{ background: '#FF7A00', boxShadow: '0 0 6px #FF7A00' }} />
+        <span className="text-paper text-[11px] sm:text-xs">Medium Risk (40–69)</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FFD600', boxShadow: '0 0 6px #FFD600' }} />
-        <span className="text-paper text-xs">Low / Watch (0–39)</span>
+        <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0" style={{ background: '#FFD600', boxShadow: '0 0 6px #FFD600' }} />
+        <span className="text-paper text-[11px] sm:text-xs">Low / Watch (0–39)</span>
       </div>
       <div className="flex items-center gap-2 pt-1 border-t border-panel-line">
-        <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[10px] border-l-transparent border-r-transparent flex-shrink-0" style={{ borderBottomColor: '#8FA3AD' }} />
-        <span className="text-paper text-xs">Settlement / Station</span>
+        <div className="w-0 h-0 border-l-[4px] sm:border-l-[5px] border-r-[4px] sm:border-r-[5px] border-b-[8px] sm:border-b-[10px] border-l-transparent border-r-transparent flex-shrink-0" style={{ borderBottomColor: '#8FA3AD' }} />
+        <span className="text-paper text-[11px] sm:text-xs">Settlement / Station</span>
       </div>
     </div>
   );
