@@ -1,0 +1,34 @@
+import { useState } from 'react';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import type { PageId } from '@/types';
+
+interface MainDashboardProps {
+  activePage: PageId;
+  onNavigate: (page: PageId) => void;
+  children: React.ReactNode;
+}
+
+export function MainDashboard({ activePage, onNavigate, children }: MainDashboardProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen flex bg-void">
+      <Sidebar
+        activePage={activePage}
+        onNavigate={onNavigate}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onNavigate={onNavigate}
+        />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}

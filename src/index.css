@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --void: #02070b;
+    --void-solid: #000000;
+    --panel: #06131a;
+    --panel-line: rgba(245, 247, 250, 0.1);
+    --cyan: #00f5ff;
+    --cyan-dim: #0a3a40;
+    --paper: #f5f7fa;
+    --fog: #8fa3ad;
+    --risk-low: #00f5ff;
+    --risk-medium: #ffb020;
+    --risk-high: #ff6a3d;
+    --risk-critical: #ff3b30;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--void-solid);
+    color: var(--paper);
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .font-mono {
+    font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+  }
+
+  .terrasafe-wordmark {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--paper);
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.4),
+      0 0 40px rgba(0, 245, 255, 0.15);
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 12px;
+  }
+
+  .panel-glow {
+    box-shadow: 0 0 0 1px rgba(0, 245, 255, 0.05),
+      0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .text-cyan {
+    color: var(--cyan);
+  }
+
+  .text-fog {
+    color: var(--fog);
+  }
+
+  .text-paper {
+    color: var(--paper);
+  }
+
+  .bg-panel {
+    background: var(--panel);
+  }
+
+  .border-panel {
+    border-color: var(--panel-line);
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 245, 255, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 245, 255, 0.4);
+}
+
+/* Leaflet dark theme overrides */
+.leaflet-container {
+  background: #06131a !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+.leaflet-control-zoom a {
+  background: #06131a !important;
+  color: #f5f7fa !important;
+  border-color: rgba(245, 247, 250, 0.1) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #0a1f29 !important;
+  color: #00f5ff !important;
+}
+.leaflet-popup-content-wrapper {
+  background: #06131a !important;
+  color: #f5f7fa !important;
+  border: 1px solid rgba(0, 245, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+.leaflet-popup-tip {
+  background: #06131a !important;
+}
+.leaflet-control-attribution {
+  background: rgba(2, 7, 11, 0.8) !important;
+  color: #8fa3ad !important;
+}
+.leaflet-control-attribution a {
+  color: #00f5ff !important;
+}
+
+/* Animations */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
