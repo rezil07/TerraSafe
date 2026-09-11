@@ -241,13 +241,12 @@ export function MapView({
 
         {/* Hotspot Outer Thermal Aura */}
         {layers.activeFires && fireEvents.map((ev) => {
-          const s = (ev.status || '').toLowerCase();
-          const color = s === 'active' ? '#FF3B30' : (s === 'contained' ? '#FFB020' : '#00F5FF');
+          const color = ev.riskScore >= 70 ? '#FF3B30' : (ev.riskScore >= 40 ? '#FF7A00' : '#FFD600');
           return (
             <CircleMarker
               key={`aura-${ev.id}`}
               center={[ev.lat, ev.lng]}
-              radius={s === 'active' ? 14 : 10}
+              radius={ev.riskScore >= 70 ? 14 : (ev.riskScore >= 40 ? 11 : 9)}
               pathOptions={{
                 color: color,
                 fillColor: color,
@@ -258,12 +257,11 @@ export function MapView({
           );
         })}
 
-        {/* Hotspot Core Glowing Markers with Tooltips & Popups */}
+        {/* Hotspot Core Vector Point (Hover for tooltip, Click to select in HUD) */}
         {layers.activeFires && fireEvents.map((ev) => {
           const isSelected = selectedEventId === ev.id;
-          const s = (ev.status || '').toLowerCase();
-          const color = s === 'active' ? '#FF3B30' : (s === 'contained' ? '#FFB020' : '#00F5FF');
-          const radius = isSelected ? 9 : (s === 'active' ? 7 : 6);
+          const color = ev.riskScore >= 70 ? '#FF3B30' : (ev.riskScore >= 40 ? '#FF7A00' : '#FFD600');
+          const radius = isSelected ? 9 : (ev.riskScore >= 70 ? 7 : (ev.riskScore >= 40 ? 6 : 5));
 
           return (
             <CircleMarker
@@ -273,7 +271,7 @@ export function MapView({
               pathOptions={{
                 color: isSelected ? '#FFFFFF' : color,
                 fillColor: color,
-                fillOpacity: 0.92,
+                fillOpacity: 0.95,
                 weight: isSelected ? 3 : 2,
               }}
               eventHandlers={{
@@ -281,33 +279,12 @@ export function MapView({
               }}
             >
               <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
-                <div className="text-xs font-semibold">{ev.name}</div>
+                <div className="text-xs font-semibold text-paper">{ev.name}</div>
                 <div className="text-[10px] text-fog">{ev.location}</div>
-                <div className="text-[10px] font-mono text-cyan">
-                  Risk: {ev.riskScore}/100 • {ev.status}
+                <div className="text-[10px] font-mono mt-0.5" style={{ color }}>
+                  Risk: {ev.riskScore}/100 • {ev.riskScore >= 70 ? 'CRITICAL' : (ev.riskScore >= 40 ? 'MEDIUM' : 'WATCH')}
                 </div>
               </Tooltip>
-              <Popup>
-                <div className="text-sm p-1 min-w-[200px]">
-                  <div className="font-semibold text-base" style={{ color: STATUS_COLORS[ev.status] || color }}>
-                    {ev.name}
-                  </div>
-                  <div className="text-fog text-xs mt-0.5">{ev.location}</div>
-                  <div className="mt-2 space-y-1 text-xs border-t border-panel-line pt-2">
-                    <div>Coordinates: <span className="font-mono text-cyan">{ev.lat.toFixed(4)}°N, {ev.lng.toFixed(4)}°E</span></div>
-                    <div>Source: <span className="font-mono">{ev.source}</span></div>
-                    <div>Confidence: <span className="font-mono">{ev.confidence}%</span></div>
-                    <div>Risk Score: <span className="font-bold" style={{ color: RISK_COLORS[ev.riskLevel] }}>{ev.riskScore}/100</span></div>
-                    <div>Status: <span className="font-semibold">{ev.status}</span></div>
-                    {ev.sosStatus && (
-                      <div>SOS Safety State: <span className="font-mono text-cyan">{ev.sosStatus}</span></div>
-                    )}
-                    {ev.frp !== undefined && (
-                      <div>Radiative Power: <span className="font-mono">{ev.frp} MW</span></div>
-                    )}
-                  </div>
-                </div>
-              </Popup>
             </CircleMarker>
           );
         })}
@@ -324,25 +301,19 @@ export function MapView({
               weight: 1,
             }}
           >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">{zone.name}</div>
-                <div className="text-xs mt-1">
-                  Risk: <span style={{ color: RISK_COLORS[zone.riskLevel] }}>{zone.riskScore}/100</span>
-                </div>
-              </div>
-            </Popup>
+            <Tooltip direction="top">
+              <div className="text-xs font-semibold">{zone.name}</div>
+              <div className="text-[10px] text-fog">Risk: {zone.riskScore}/100</div>
+            </Tooltip>
           </CircleMarker>
         ))}
 
         {layers.settlements && settlements.map((s) => (
           <Marker key={s.id} position={[s.lat, s.lng]} icon={settlementIcon}>
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">{s.name}</div>
-                <div className="text-fog text-xs">Pop: {s.population.toLocaleString()}</div>
-              </div>
-            </Popup>
+            <Tooltip direction="top">
+              <div className="text-xs font-semibold">{s.name}</div>
+              <div className="text-[10px] text-fog">Pop: {s.population.toLocaleString()}</div>
+            </Tooltip>
           </Marker>
         ))}
 
@@ -370,20 +341,76 @@ export function MapView({
         {layers.emergencyInfra && (
           <>
             <CircleMarker center={[29.39, 79.45]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>Uttarakhand Forest Fire Post — Nainital</Popup>
+              <Tooltip>Uttarakhand Forest Fire Post — Nainital</Tooltip>
             </CircleMarker>
             <CircleMarker center={[21.93, 86.72]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>Odisha Forest Response Division — Baripada</Popup>
+              <Tooltip>Odisha Forest Response Division — Baripada</Tooltip>
             </CircleMarker>
             <CircleMarker center={[22.46, 78.43]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>MP Forest Quick Response — Pachmarhi</Popup>
+              <Tooltip>MP Forest Quick Response — Pachmarhi</Tooltip>
             </CircleMarker>
             <CircleMarker center={[30.31, 78.03]} radius={6} pathOptions={{ color: '#00FF88', fillColor: '#00FF88', fillOpacity: 0.3 }} >
-              <Popup>SDRF Headquarters — Dehradun</Popup>
+              <Tooltip>SDRF Headquarters — Dehradun</Tooltip>
             </CircleMarker>
           </>
         )}
       </MapContainer>
+
+      {/* Non-intrusive Floating Telemetric HUD (docked at bottom-left, never blocks top controls or map) */}
+      {selectedEventId && (() => {
+        const selectedEvent = fireEvents.find((e) => e.id === selectedEventId);
+        if (!selectedEvent) return null;
+        const color = selectedEvent.riskScore >= 70 ? '#FF3B30' : (selectedEvent.riskScore >= 40 ? '#FF7A00' : '#FFD600');
+        const levelLabel = selectedEvent.riskScore >= 70 ? 'CRITICAL / CONFIRMED' : (selectedEvent.riskScore >= 40 ? 'MEDIUM RISK' : 'LOW / WATCH');
+
+        return (
+          <div className="absolute bottom-8 left-4 z-[500] panel p-3 w-80 bg-void/95 backdrop-blur-md border border-panel-line shadow-2xl rounded-xl transition-all">
+            <div className="flex items-start justify-between gap-2 border-b border-panel-line pb-2 mb-2.5">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-paper truncate">{selectedEvent.name}</div>
+                <div className="text-xs text-fog truncate">{selectedEvent.location}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectEvent?.('')}
+                className="text-fog hover:text-paper text-xs px-1.5 py-0.5 rounded border border-panel-line hover:bg-panel transition-colors"
+                title="Close Inspector"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
+                <span className="text-[10px] uppercase tracking-wider text-fog block">Wildfire Risk</span>
+                <span className="font-bold text-base block mt-0.5" style={{ color }}>
+                  {selectedEvent.riskScore}/100
+                </span>
+                <span className="text-[9px] font-mono text-fog block">{levelLabel}</span>
+              </div>
+              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
+                <span className="text-[10px] uppercase tracking-wider text-fog block">Confidence</span>
+                <span className="font-mono text-base text-cyan block mt-0.5">{selectedEvent.confidence}%</span>
+                <span className="text-[9px] font-mono text-fog block">Sensor: {selectedEvent.source}</span>
+              </div>
+              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
+                <span className="text-[10px] uppercase tracking-wider text-fog block">GPS Coordinates</span>
+                <span className="font-mono text-xs text-paper block mt-1">
+                  {selectedEvent.lat.toFixed(4)}° N<br />{selectedEvent.lng.toFixed(4)}° E
+                </span>
+              </div>
+              <div className="bg-panel/70 p-2 rounded-lg border border-panel-line">
+                <span className="text-[10px] uppercase tracking-wider text-fog block">SOS State</span>
+                <span className="font-mono text-[10px] font-semibold text-cyan block mt-1 truncate">
+                  {selectedEvent.sosStatus || 'MONITOR'}
+                </span>
+                {selectedEvent.frp !== undefined && (
+                  <span className="text-[9px] font-mono text-fog block mt-0.5">FRP: {selectedEvent.frp} MW</span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showLegend && <MapLegend />}
 
@@ -396,27 +423,23 @@ export function MapView({
 
 function MapLegend() {
   return (
-    <div className="absolute top-3 right-3 z-[500] panel p-3 text-xs space-y-2 max-w-[180px]">
-      <div className="text-fog uppercase tracking-wider text-[10px] font-semibold mb-1">Legend</div>
+    <div className="absolute top-3 right-3 z-[500] panel p-3 text-xs space-y-2 max-w-[210px] bg-void/90 backdrop-blur border border-panel-line shadow-lg">
+      <div className="text-fog uppercase tracking-wider text-[10px] font-semibold mb-1">Wildfire Risk Tiers</div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full" style={{ background: '#FF3B30', boxShadow: '0 0 4px #FF3B30' }} />
-        <span className="text-paper">Active fire</span>
+        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FF3B30', boxShadow: '0 0 6px #FF3B30' }} />
+        <span className="text-paper text-xs">High / Confirmed (70–100)</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full" style={{ background: '#FFB020', boxShadow: '0 0 4px #FFB020' }} />
-        <span className="text-paper">Contained</span>
+        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FF7A00', boxShadow: '0 0 6px #FF7A00' }} />
+        <span className="text-paper text-xs">Medium Risk (40–69)</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full" style={{ background: '#00F5FF', boxShadow: '0 0 4px #00F5FF' }} />
-        <span className="text-paper">Monitored</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full" style={{ background: '#00FF88' }} />
-        <span className="text-paper">Controlled</span>
+        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#FFD600', boxShadow: '0 0 6px #FFD600' }} />
+        <span className="text-paper text-xs">Low / Watch (0–39)</span>
       </div>
       <div className="flex items-center gap-2 pt-1 border-t border-panel-line">
-        <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#8FA3AD' }} />
-        <span className="text-paper">Settlement</span>
+        <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[10px] border-l-transparent border-r-transparent flex-shrink-0" style={{ borderBottomColor: '#8FA3AD' }} />
+        <span className="text-paper text-xs">Settlement / Station</span>
       </div>
     </div>
   );

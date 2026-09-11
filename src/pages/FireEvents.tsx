@@ -117,16 +117,17 @@ export function FireEvents() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-panel-line text-xs uppercase tracking-wider text-fog">
-                <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('id')}>
+                <th className="text-left px-3 py-3 w-16">Sr. No.</th>
+                <th className="text-left px-3 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('id')}>
                   Fire ID <SortIcon col="id" />
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('location')}>
-                  Location <SortIcon col="location" />
+                  Location & Sector <SortIcon col="location" />
                 </th>
-                <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('detected')}>
+                <th className="text-left px-3 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('detected')}>
                   Detected <SortIcon col="detected" />
                 </th>
-                <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('source')}>
+                <th className="text-left px-3 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('source')}>
                   Source <SortIcon col="source" />
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('confidence')}>
@@ -135,27 +136,32 @@ export function FireEvents() {
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('riskScore')}>
                   Risk <SortIcon col="riskScore" />
                 </th>
-                <th className="text-left px-4 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('status')}>
+                <th className="text-left px-3 py-3 cursor-pointer hover:text-cyan" onClick={() => handleSort('status')}>
                   Status <SortIcon col="status" />
                 </th>
-                <th className="text-left px-4 py-3">
+                <th className="text-left px-3 py-3">
                   SOS Action
                 </th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((ev) => (
+              {visible.map((ev, idx) => (
                 <tr
                   key={ev.id}
                   className="border-b border-panel-line/50 hover:bg-cyan/5 transition-colors"
                 >
-                  <td className="px-4 py-3 font-mono text-xs text-cyan">{ev.id}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-fog/70">{idx + 1}</td>
+                  <td className="px-3 py-3">
+                    <span className="font-mono text-[11px] text-cyan bg-cyan/10 px-1.5 py-0.5 rounded border border-cyan/25 whitespace-nowrap">
+                      {ev.id}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
-                    <div className="text-paper font-medium">{ev.name}</div>
+                    <div className="text-paper font-medium text-sm">{ev.name}</div>
                     <div className="text-xs text-fog">{ev.location}</div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-fog">{ev.detectedRelative}</td>
-                  <td className="px-4 py-3 text-xs text-fog">{ev.source}</td>
+                  <td className="px-3 py-3 text-xs text-fog">{ev.detectedRelative}</td>
+                  <td className="px-3 py-3 text-xs text-fog">{ev.source}</td>
                   <td className="px-4 py-3"><ConfidenceBar value={ev.confidence} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -165,8 +171,8 @@ export function FireEvents() {
                       <RiskBadge level={ev.riskLevel} size="sm" />
                     </div>
                   </td>
-                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3"><StatusBadge status={ev.status} /></td>
+                  <td className="px-3 py-3">
                     <span className="font-mono text-[11px] px-2 py-0.5 rounded border border-cyan/30 bg-cyan/10 text-cyan whitespace-nowrap">
                       {ev.sosStatus || (ev.riskScore >= 70 ? 'ESCALATION_INITIATED' : ev.riskScore >= 40 ? 'MONITOR' : 'NO_ESCALATION')}
                     </span>
