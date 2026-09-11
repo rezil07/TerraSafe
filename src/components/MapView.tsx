@@ -4,11 +4,13 @@ import {
   CircleMarker,
   Marker,
   Popup,
+  Tooltip,
   Polyline,
+  useMap,
 } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useState, useEffect, useMemo } from 'react';
-import { useMap } from 'react-leaflet';
 import {
   fireEvents as allFireEvents,
   riskZones as allRiskZones,
@@ -40,49 +42,12 @@ export function getDefaultLayers() {
   return { ...defaultLayers };
 }
 
-// Marker icons
-const fireIcon = L.divIcon({
-  className: 'fire-marker',
-  html: '<div style="width:14px;height:14px;border-radius:50%;background:#FF3B30;box-shadow:0 0 10px #FF3B30,0 0 5px #FF6A3D;border:2px solid rgba(255,255,255,0.7);animation:pulse-dot 2s infinite;"></div>',
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-});
-
-const containedIcon = L.divIcon({
-  className: 'fire-marker',
-  html: '<div style="width:12px;height:12px;border-radius:50%;background:#FFB020;box-shadow:0 0 8px #FFB020;border:1.5px solid rgba(255,255,255,0.5);"></div>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-});
-
-const monitoredIcon = L.divIcon({
-  className: 'fire-marker',
-  html: '<div style="width:12px;height:12px;border-radius:50%;background:#00F5FF;box-shadow:0 0 8px #00F5FF;border:1.5px solid rgba(255,255,255,0.5);"></div>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-});
-
-const controlledIcon = L.divIcon({
-  className: 'fire-marker',
-  html: '<div style="width:10px;height:10px;border-radius:50%;background:#00FF88;box-shadow:0 0 6px #00FF88;border:1.5px solid rgba(255,255,255,0.3);"></div>',
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-});
-
 const settlementIcon = L.divIcon({
   className: 'settlement-marker',
   html: '<div style="width:10px;height:10px;background:#8FA3AD;clip-path:polygon(50% 0,100% 100%,0 100%);opacity:0.8;"></div>',
   iconSize: [10, 10],
   iconAnchor: [5, 10],
 });
-
-function getFireIcon(ev: FireEvent) {
-  const s = (ev.status || '').toLowerCase();
-  if (s === 'active') return fireIcon;
-  if (s === 'contained') return containedIcon;
-  if (s === 'controlled') return controlledIcon;
-  return monitoredIcon;
-}
 
 interface MapViewProps {
   layers?: MapLayers;
@@ -103,45 +68,54 @@ const ESRI_SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services
 const ESRI_ATTR = '&copy; <a href="https://www.esri.com">Esri</a> &mdash; Earthstar Geographics';
 
 /**
- * Controller to handle dynamic bounds fitting and resize invalidation
+ * Controller to handle camera view modes, auto-fit, and tile resize invalidation
  */
 function MapController({
-  center,
-  zoom,
   events,
   selectedEventId,
+  viewMode,
 }: {
-  center: [number, number];
-  zoom: number;
   events: FireEvent[];
   selectedEventId?: string | null;
+  viewMode: 'india' | 'hotspots';
 }) {
   const map = useMap();
 
-  // Fix partial square tile bug when rendering inside flex/grid tabs
+  // Fix tile rendering and sizing across mounts and resizes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
-    return () => clearTimeout(timer);
+    map.invalidateSize();
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 600);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [map]);
 
-  // Pan to selected event if clicked
+  // Pan smoothly to selected event if clicked from the list
   useEffect(() => {
     if (selectedEventId) {
       const target = events.find((e) => e.id === selectedEventId);
       if (target) {
-        map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 7), { duration: 1.0 });
+        map.flyTo([target.lat, target.lng], 8, { duration: 1.2 });
       }
     }
   }, [selectedEventId, events, map]);
 
-  // Auto-fit bounds to actual active detections across India
+  // Handle India whole view vs Zoom Hotspots mode
   useEffect(() => {
-    if (!events || events.length === 0) {
-      map.setView(center, zoom);
+    if (selectedEventId) return;
+
+    if (viewMode === 'india' || !events || events.length === 0) {
+      map.setView([22.8, 80.0], 5);
+      map.invalidateSize();
       return;
     }
+
+    // Fit to live detected Indian hotspots
     const valid = events.filter((e) => e.lat >= 6 && e.lat <= 38 && e.lng >= 68 && e.lng <= 98);
     if (valid.length > 0) {
       const lats = valid.map((e) => e.lat);
@@ -151,25 +125,25 @@ function MapController({
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
 
-      const latPad = Math.max(1.0, (maxLat - minLat) * 0.2);
-      const lngPad = Math.max(1.0, (maxLng - minLng) * 0.2);
+      const latPad = Math.max(1.2, (maxLat - minLat) * 0.25);
+      const lngPad = Math.max(1.2, (maxLng - minLng) * 0.25);
 
       map.fitBounds(
         [
           [Math.max(6.0, minLat - latPad), Math.max(68.0, minLng - lngPad)],
           [Math.min(37.5, maxLat + latPad), Math.min(98.0, maxLng + lngPad)],
         ],
-        { padding: [35, 35], maxZoom: 8 }
+        { padding: [40, 40], maxZoom: 7 }
       );
     }
-  }, [events, map, center, zoom]);
+  }, [viewMode, events, map, selectedEventId]);
 
   return null;
 }
 
 export function MapView({
   layers = defaultLayers,
-  center = [22.5, 79.0],
+  center = [22.8, 80.0],
   zoom = 5,
   selectedEventId,
   onSelectEvent,
@@ -179,32 +153,58 @@ export function MapView({
   events,
 }: MapViewProps) {
   const [basemap, setBasemap] = useState<'dark' | 'satellite'>('dark');
+  const [viewMode, setViewMode] = useState<'india' | 'hotspots'>('india');
   const fireEvents = useMemo(() => events || allFireEvents, [events]);
   const riskZones = useMemo(() => allRiskZones, []);
   const settlements = useMemo(() => allSettlements, []);
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
-      {/* Basemap Switcher Pill */}
-      <div className="absolute top-3 left-14 z-[500] flex items-center bg-void/90 p-1 rounded-lg border border-panel-line text-xs shadow-lg">
-        <button
-          type="button"
-          onClick={() => setBasemap('dark')}
-          className={`px-2.5 py-1 rounded transition-colors ${
-            basemap === 'dark' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
-          }`}
-        >
-          Tactical Dark
-        </button>
-        <button
-          type="button"
-          onClick={() => setBasemap('satellite')}
-          className={`px-2.5 py-1 rounded transition-colors ${
-            basemap === 'satellite' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
-          }`}
-        >
-          Satellite
-        </button>
+      {/* Top Controls Bar: Basemap & Camera View */}
+      <div className="absolute top-3 left-14 z-[500] flex flex-wrap items-center gap-2">
+        {/* Basemap Switcher */}
+        <div className="flex items-center bg-void/90 p-0.5 rounded-lg border border-panel-line text-xs shadow-lg">
+          <button
+            type="button"
+            onClick={() => setBasemap('dark')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              basemap === 'dark' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+            }`}
+          >
+            Tactical Dark
+          </button>
+          <button
+            type="button"
+            onClick={() => setBasemap('satellite')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              basemap === 'satellite' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+            }`}
+          >
+            Satellite
+          </button>
+        </div>
+
+        {/* Camera View Switcher */}
+        <div className="flex items-center bg-void/90 p-0.5 rounded-lg border border-panel-line text-xs shadow-lg">
+          <button
+            type="button"
+            onClick={() => setViewMode('india')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              viewMode === 'india' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+            }`}
+          >
+            View India
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('hotspots')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              viewMode === 'hotspots' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
+            }`}
+          >
+            Focus Hotspots
+          </button>
+        </div>
       </div>
 
       <MapContainer
@@ -214,10 +214,9 @@ export function MapView({
         scrollWheelZoom
       >
         <MapController
-          center={center}
-          zoom={zoom}
           events={fireEvents}
           selectedEventId={selectedEventId}
+          viewMode={viewMode}
         />
 
         {basemap === 'dark' ? (
@@ -240,31 +239,78 @@ export function MapView({
           />
         )}
 
-        {layers.activeFires && fireEvents.map((ev) => (
-          <Marker
-            key={ev.id}
-            position={[ev.lat, ev.lng]}
-            icon={getFireIcon(ev)}
-            eventHandlers={{
-              click: () => onSelectEvent?.(ev.id),
-            }}
-          >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold" style={{ color: STATUS_COLORS[ev.status] }}>
-                  {ev.name}
+        {/* Hotspot Outer Thermal Aura */}
+        {layers.activeFires && fireEvents.map((ev) => {
+          const s = (ev.status || '').toLowerCase();
+          const color = s === 'active' ? '#FF3B30' : (s === 'contained' ? '#FFB020' : '#00F5FF');
+          return (
+            <CircleMarker
+              key={`aura-${ev.id}`}
+              center={[ev.lat, ev.lng]}
+              radius={s === 'active' ? 14 : 10}
+              pathOptions={{
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.22,
+                weight: 1,
+              }}
+            />
+          );
+        })}
+
+        {/* Hotspot Core Glowing Markers with Tooltips & Popups */}
+        {layers.activeFires && fireEvents.map((ev) => {
+          const isSelected = selectedEventId === ev.id;
+          const s = (ev.status || '').toLowerCase();
+          const color = s === 'active' ? '#FF3B30' : (s === 'contained' ? '#FFB020' : '#00F5FF');
+          const radius = isSelected ? 9 : (s === 'active' ? 7 : 6);
+
+          return (
+            <CircleMarker
+              key={ev.id}
+              center={[ev.lat, ev.lng]}
+              radius={radius}
+              pathOptions={{
+                color: isSelected ? '#FFFFFF' : color,
+                fillColor: color,
+                fillOpacity: 0.92,
+                weight: isSelected ? 3 : 2,
+              }}
+              eventHandlers={{
+                click: () => onSelectEvent?.(ev.id),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
+                <div className="text-xs font-semibold">{ev.name}</div>
+                <div className="text-[10px] text-fog">{ev.location}</div>
+                <div className="text-[10px] font-mono text-cyan">
+                  Risk: {ev.riskScore}/100 • {ev.status}
                 </div>
-                <div className="text-fog text-xs mt-1">{ev.location}</div>
-                <div className="mt-2 space-y-0.5 text-xs">
-                  <div>Source: <span className="font-mono">{ev.source}</span></div>
-                  <div>Confidence: <span className="font-mono">{ev.confidence}%</span></div>
-                  <div>Risk: <span style={{ color: RISK_COLORS[ev.riskLevel] }}>{ev.riskScore}/100</span></div>
-                  <div>Status: {ev.status}</div>
+              </Tooltip>
+              <Popup>
+                <div className="text-sm p-1 min-w-[200px]">
+                  <div className="font-semibold text-base" style={{ color: STATUS_COLORS[ev.status] || color }}>
+                    {ev.name}
+                  </div>
+                  <div className="text-fog text-xs mt-0.5">{ev.location}</div>
+                  <div className="mt-2 space-y-1 text-xs border-t border-panel-line pt-2">
+                    <div>Coordinates: <span className="font-mono text-cyan">{ev.lat.toFixed(4)}°N, {ev.lng.toFixed(4)}°E</span></div>
+                    <div>Source: <span className="font-mono">{ev.source}</span></div>
+                    <div>Confidence: <span className="font-mono">{ev.confidence}%</span></div>
+                    <div>Risk Score: <span className="font-bold" style={{ color: RISK_COLORS[ev.riskLevel] }}>{ev.riskScore}/100</span></div>
+                    <div>Status: <span className="font-semibold">{ev.status}</span></div>
+                    {ev.sosStatus && (
+                      <div>SOS Safety State: <span className="font-mono text-cyan">{ev.sosStatus}</span></div>
+                    )}
+                    {ev.frp !== undefined && (
+                      <div>Radiative Power: <span className="font-mono">{ev.frp} MW</span></div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </CircleMarker>
+          );
+        })}
 
         {layers.riskZones && riskZones.map((zone) => (
           <CircleMarker

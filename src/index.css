@@ -102,12 +102,26 @@
   background: rgba(0, 245, 255, 0.4);
 }
 
-/* Leaflet dark theme overrides */
+/* Leaflet dark theme overrides & Tailwind image reset */
 .leaflet-container {
   background: #06131a !important;
   font-family: 'Space Grotesk', sans-serif !important;
   width: 100% !important;
   height: 100% !important;
+  position: relative !important;
+}
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  visibility: inherit !important;
+}
+.leaflet-tile-container img {
+  max-width: none !important;
+  max-height: none !important;
 }
 .leaflet-div-icon {
   background: transparent !important;
