@@ -40,14 +40,14 @@ export function Sidebar({ activePage, onNavigate, isOpen, onClose, onGoToLanding
 
       <aside
         className={`
-          fixed md:sticky top-0 left-0 h-full md:h-screen z-40 md:z-0
-          w-60 flex-shrink-0 panel border-l-0 border-t-0 border-b-0
+          fixed top-0 left-0 h-screen z-40
+          w-60 panel border-l-0 border-t-0 border-b-0
           flex flex-col transition-transform duration-300
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         {/* Wordmark / Logo (Clickable to return to Landing Page) */}
-        <div className="p-5 border-b border-panel-line flex items-center justify-between">
+        <div className="p-5 border-b border-panel-line flex items-center justify-between flex-shrink-0">
           <button
             type="button"
             onClick={onGoToLanding}
@@ -105,7 +105,7 @@ export function Sidebar({ activePage, onNavigate, isOpen, onClose, onGoToLanding
         </nav>
 
         {/* System status */}
-        <div className="p-4 border-t border-panel-line">
+        <div className="p-4 border-t border-panel-line flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="relative w-2 h-2 flex-shrink-0">
               <div className="absolute inset-0 rounded-full bg-green-400 pulse-dot" />

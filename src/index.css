@@ -25,13 +25,13 @@
   html {
     scroll-behavior: smooth;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   body {
     margin: 0;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     background: var(--void-solid);
     color: var(--paper);
     font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
@@ -43,7 +43,7 @@
   #root {
     min-height: 100vh;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 
