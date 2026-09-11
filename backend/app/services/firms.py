@@ -198,21 +198,29 @@ async def fetch_firms_hotspots(max_records: int = 50) -> List[FireEventModel]:
     if _FIRMS_CACHE and (now - _LAST_FETCH_TIME < CACHE_TTL):
         return _FIRMS_CACHE
 
-    url = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_South_Asia_24h.csv"
+    urls_to_try = []
+    if settings.FIRMS_API_KEY and settings.FIRMS_API_KEY.strip():
+        key = settings.FIRMS_API_KEY.strip()
+        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{key}/VIIRS_SNPP_NRT/IND/1")
+        urls_to_try.append(f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{key}/MODIS_NRT/IND/1")
+    urls_to_try.append("https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_South_Asia_24h.csv")
+
     raw_hotspots = []
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url)
-            if resp.status_code == 200 and len(resp.text) > 100:
-                reader = csv.DictReader(io.StringIO(resp.text))
-                idx = 1
-                for row in reader:
-                    try:
-                        lat = float(row.get("latitude", 0))
-                        lng = float(row.get("longitude", 0))
-                        if not is_in_india(lat, lng):
-                            continue
+            for url in urls_to_try:
+                try:
+                    resp = await client.get(url)
+                    if resp.status_code == 200 and len(resp.text) > 100:
+                        reader = csv.DictReader(io.StringIO(resp.text))
+                        idx = len(raw_hotspots) + 1
+                        for row in reader:
+                            try:
+                                lat = float(row.get("latitude", 0))
+                                lng = float(row.get("longitude", 0))
+                                if not is_in_india(lat, lng):
+                                    continue
 
                         frp = float(row.get("frp", 10.0))
                         bright_ti4 = float(row.get("bright_ti4", 325.0))
