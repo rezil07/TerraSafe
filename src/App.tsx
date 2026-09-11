@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { LandingPage } from '@/components/LandingPage';
 import { MainDashboard } from '@/components/MainDashboard';
+import { SettingsProvider } from '@/context/SettingsContext';
 import type { PageId } from '@/types';
 
 const Dashboard = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.Dashboard })));
@@ -26,10 +27,6 @@ export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
-  if (!entered) {
-    return <LandingPage onEnter={() => setEntered(true)} />;
-  }
-
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <Dashboard onNavigate={setPage} />;
@@ -46,22 +43,28 @@ export default function App() {
   };
 
   return (
-    <MainDashboard
-      activePage={page}
-      onNavigate={setPage}
-      onGoToLanding={() => setEntered(false)}
-      searchQuery={searchQuery}
-      onSearchChange={(q) => {
-        setSearchQuery(q);
-        if (page !== 'fire-events') setPage('fire-events');
-      }}
-      onSearchFocus={() => {
-        if (page !== 'fire-events') setPage('fire-events');
-      }}
-    >
-      <Suspense fallback={<PageLoader />}>
-        {renderPage()}
-      </Suspense>
-    </MainDashboard>
+    <SettingsProvider>
+      {!entered ? (
+        <LandingPage onEnter={() => setEntered(true)} />
+      ) : (
+        <MainDashboard
+          activePage={page}
+          onNavigate={setPage}
+          onGoToLanding={() => setEntered(false)}
+          searchQuery={searchQuery}
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+            if (page !== 'fire-events') setPage('fire-events');
+          }}
+          onSearchFocus={() => {
+            if (page !== 'fire-events') setPage('fire-events');
+          }}
+        >
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </MainDashboard>
+      )}
+    </SettingsProvider>
   );
 }

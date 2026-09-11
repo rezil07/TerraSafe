@@ -1,4 +1,5 @@
-import { Search, Satellite, Menu, X } from 'lucide-react';
+import { Search, Satellite, Menu, X, Shield, Flame, Radio, User as UserIcon } from 'lucide-react';
+import { useSettings, getInitials, type UserProfile } from '@/context/SettingsContext';
 import type { PageId } from '@/types';
 
 interface HeaderProps {
@@ -10,6 +11,58 @@ interface HeaderProps {
   onSearchFocus?: () => void;
 }
 
+function renderHeaderAvatar(profile: UserProfile) {
+  if (profile.pfp) {
+    return (
+      <img
+        src={profile.pfp}
+        alt={profile.name}
+        className="w-8 h-8 rounded-full object-cover border border-cyan/40 shadow-[0_0_8px_rgba(0,245,255,0.3)]"
+      />
+    );
+  }
+  if (profile.avatarPreset === 'satellite') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-cyan/15 border border-cyan/40 text-cyan flex items-center justify-center">
+        <Satellite className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (profile.avatarPreset === 'shield') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-cyan/15 border border-cyan/40 text-cyan flex items-center justify-center">
+        <Shield className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (profile.avatarPreset === 'flame') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center">
+        <Flame className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (profile.avatarPreset === 'radio') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-cyan/15 border border-cyan/40 text-cyan flex items-center justify-center">
+        <Radio className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (profile.avatarPreset === 'user') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-cyan/15 border border-cyan/40 text-cyan flex items-center justify-center">
+        <UserIcon className="w-4 h-4" />
+      </div>
+    );
+  }
+  return (
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan/30 to-cyan-dim flex items-center justify-center text-xs font-semibold text-paper border border-cyan/30">
+      {getInitials(profile.name)}
+    </div>
+  );
+}
+
 export function Header({
   onToggleSidebar,
   onNavigate,
@@ -18,6 +71,8 @@ export function Header({
   onSearchChange,
   onSearchFocus,
 }: HeaderProps) {
+  const { profile } = useSettings();
+
   return (
     <header className="h-14 panel border-l-0 border-r-0 border-t-0 flex items-center justify-between px-3 md:px-6 gap-2 sm:gap-4 flex-shrink-0">
       <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-2xl min-w-0">
@@ -74,15 +129,22 @@ export function Header({
           <span className="w-1.5 h-1.5 rounded-full bg-cyan pulse-dot" />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan/30 to-cyan-dim flex items-center justify-center text-xs font-semibold text-paper">
-            OP
-          </div>
+        <button
+          type="button"
+          onClick={() => onNavigate('settings')}
+          className="flex items-center gap-2.5 hover:opacity-85 transition-all text-left cursor-pointer group p-1 -mr-1 rounded-lg hover:bg-white/5 focus:outline-none"
+          title="Account Settings & Profile (Click to edit)"
+        >
+          {renderHeaderAvatar(profile)}
           <div className="hidden md:block">
-            <div className="text-xs font-medium text-paper leading-tight">Operations</div>
-            <div className="text-[10px] text-fog leading-tight">TERRASAFE Command</div>
+            <div className="text-xs font-medium text-paper leading-tight group-hover:text-cyan transition-colors truncate max-w-[150px]">
+              {profile.name || 'Operations'}
+            </div>
+            <div className="text-[10px] text-fog leading-tight truncate max-w-[150px]">
+              {profile.org || 'TERRASAFE Command'}
+            </div>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );
