@@ -222,37 +222,39 @@ async def fetch_firms_hotspots(max_records: int = 50) -> List[FireEventModel]:
                                 if not is_in_india(lat, lng):
                                     continue
 
-                        frp = float(row.get("frp", 10.0))
-                        bright_ti4 = float(row.get("bright_ti4", 325.0))
-                        conf_str = row.get("confidence", "nominal")
-                        acq_date = row.get("acq_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
-                        acq_time = row.get("acq_time", "1200")
-                        ts = parse_firms_timestamp(acq_date, acq_time)
+                                frp = float(row.get("frp", 10.0))
+                                bright_ti4 = float(row.get("bright_ti4", 325.0))
+                                conf_str = row.get("confidence", "nominal")
+                                acq_date = row.get("acq_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+                                acq_time = row.get("acq_time", "1200")
+                                ts = parse_firms_timestamp(acq_date, acq_time)
 
-                        state_info = resolve_indian_state(lat, lng)
+                                state_info = resolve_indian_state(lat, lng)
 
-                        raw_hotspots.append({
-                            "id": f"FIRE-IND-{idx:03d}",
-                            "name": f"{state_info['state']} Hotspot #{idx}",
-                            "location": f"{state_info['region']}, {state_info['state']}",
-                            "state": state_info["state"],
-                            "lat": lat,
-                            "lng": lng,
-                            "source": "VIIRS",
-                            "confidence": normalize_confidence(conf_str),
-                            "frp": frp,
-                            "bright_ti4": bright_ti4,
-                            "timestamp": ts,
-                            "detected": ts.isoformat(),
-                            "detectedRelative": f"{max(1, int(compute_staleness_hours(ts)))}h ago",
-                            "status": "Active" if frp > 15 else "Monitored",
-                            "area": round(frp * 8.5, 1),
-                        })
-                        idx += 1
-                        if len(raw_hotspots) >= max_records:
-                            break
-                    except Exception:
-                        continue
+                                raw_hotspots.append({
+                                    "id": f"FIRE-IND-{idx:03d}",
+                                    "name": f"{state_info['state']} Hotspot #{idx}",
+                                    "location": f"{state_info['region']}, {state_info['state']}",
+                                    "state": state_info["state"],
+                                    "lat": lat,
+                                    "lng": lng,
+                                    "source": "VIIRS",
+                                    "confidence": normalize_confidence(conf_str),
+                                    "frp": frp,
+                                    "bright_ti4": bright_ti4,
+                                    "timestamp": ts,
+                                    "detected": ts.isoformat(),
+                                    "detectedRelative": f"{max(1, int(compute_staleness_hours(ts)))}h ago",
+                                    "status": "Active" if frp > 15 else "Monitored",
+                                    "area": round(frp * 8.5, 1),
+                                })
+                                idx += 1
+                                if len(raw_hotspots) >= max_records:
+                                    break
+                            except Exception:
+                                continue
+                except Exception:
+                    continue
     except Exception as e:
         print(f"Warning: Could not fetch real-time FIRMS feed ({e}), using baseline verified hotspots...")
 
