@@ -74,10 +74,12 @@ function MapController({
   events,
   selectedEventId,
   viewMode,
+  flyTarget,
 }: {
   events: FireEvent[];
   selectedEventId?: string | null;
   viewMode: 'india' | 'hotspots';
+  flyTarget?: { lat: number; lng: number; trigger: number } | null;
 }) {
   const map = useMap();
 
@@ -95,19 +97,29 @@ function MapController({
     };
   }, [map]);
 
-  // Pan smoothly to selected event if clicked from the list
+  // Pan and zoom smoothly to target coordinates with closest look (zoom 16)
   useEffect(() => {
+    if (flyTarget) {
+      map.flyTo([flyTarget.lat, flyTarget.lng], 16, {
+        duration: 1.4,
+        easeLinearity: 0.25,
+      });
+      return;
+    }
     if (selectedEventId) {
       const target = events.find((e) => e.id === selectedEventId);
       if (target) {
-        map.flyTo([target.lat, target.lng], 8, { duration: 1.2 });
+        map.flyTo([target.lat, target.lng], 16, {
+          duration: 1.4,
+          easeLinearity: 0.25,
+        });
       }
     }
-  }, [selectedEventId, events, map]);
+  }, [flyTarget, selectedEventId, events, map]);
 
   // Handle India whole view vs Zoom Hotspots mode
   useEffect(() => {
-    if (selectedEventId) return;
+    if (selectedEventId || flyTarget) return;
 
     if (viewMode === 'india' || !events || events.length === 0) {
       map.setView([22.8, 80.0], 5);
@@ -136,7 +148,7 @@ function MapController({
         { padding: [40, 40], maxZoom: 7 }
       );
     }
-  }, [viewMode, events, map, selectedEventId]);
+  }, [viewMode, events, map, selectedEventId, flyTarget]);
 
   return null;
 }
@@ -154,9 +166,42 @@ export function MapView({
 }: MapViewProps) {
   const [basemap, setBasemap] = useState<'dark' | 'satellite'>('dark');
   const [viewMode, setViewMode] = useState<'india' | 'hotspots'>('india');
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
+  const [isHudOpen, setIsHudOpen] = useState(false);
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; trigger: number } | null>(null);
+
   const fireEvents = useMemo(() => events || allFireEvents, [events]);
   const riskZones = useMemo(() => allRiskZones, []);
   const settlements = useMemo(() => allSettlements, []);
+
+  // Determine active selected ID (parent controlled or internal)
+  const activeSelectedId = selectedEventId !== undefined ? selectedEventId : internalSelectedId;
+
+  // Whenever parent prop changes to a valid event ID, open the HUD and fly to it
+  useEffect(() => {
+    if (selectedEventId) {
+      setIsHudOpen(true);
+      const ev = fireEvents.find((e) => e.id === selectedEventId);
+      if (ev) {
+        setFlyTarget({ lat: ev.lat, lng: ev.lng, trigger: Date.now() });
+      }
+    } else if (selectedEventId === '' || selectedEventId === null) {
+      setIsHudOpen(false);
+    }
+  }, [selectedEventId, fireEvents]);
+
+  const handleMarkerClick = (ev: FireEvent) => {
+    setInternalSelectedId(ev.id);
+    setIsHudOpen(true);
+    setFlyTarget({ lat: ev.lat, lng: ev.lng, trigger: Date.now() });
+    onSelectEvent?.(ev.id);
+  };
+
+  const handleCloseHud = () => {
+    setIsHudOpen(false);
+    setInternalSelectedId(null);
+    onSelectEvent?.('');
+  };
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
@@ -188,7 +233,10 @@ export function MapView({
         <div className="flex items-center bg-void/90 p-0.5 rounded-lg border border-panel-line text-xs shadow-lg">
           <button
             type="button"
-            onClick={() => setViewMode('india')}
+            onClick={() => {
+              setFlyTarget(null);
+              setViewMode('india');
+            }}
             className={`px-2.5 py-1 rounded transition-colors ${
               viewMode === 'india' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
             }`}
@@ -197,7 +245,10 @@ export function MapView({
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('hotspots')}
+            onClick={() => {
+              setFlyTarget(null);
+              setViewMode('hotspots');
+            }}
             className={`px-2.5 py-1 rounded transition-colors ${
               viewMode === 'hotspots' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
             }`}
@@ -212,11 +263,17 @@ export function MapView({
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom
+        zoomAnimation={true}
+        fadeAnimation={true}
+        markerZoomAnimation={true}
+        wheelDebounceTime={40}
+        wheelPxPerZoomLevel={90}
       >
         <MapController
           events={fireEvents}
-          selectedEventId={selectedEventId}
+          selectedEventId={activeSelectedId}
           viewMode={viewMode}
+          flyTarget={flyTarget}
         />
 
         {basemap === 'dark' ? (
@@ -224,11 +281,20 @@ export function MapView({
             <TileLayer
               url={ESRI_DARK_URL}
               attribution={ESRI_ATTR}
-              maxZoom={16}
+              maxZoom={18}
+              maxNativeZoom={16}
+              keepBuffer={6}
+              updateWhenZooming={false}
+              updateWhenIdle={true}
             />
             <TileLayer
               url={ESRI_DARK_REF_URL}
-              maxZoom={16}
+              attribution={ESRI_ATTR}
+              maxZoom={18}
+              maxNativeZoom={16}
+              keepBuffer={6}
+              updateWhenZooming={false}
+              updateWhenIdle={true}
             />
           </>
         ) : (
@@ -236,6 +302,10 @@ export function MapView({
             url={ESRI_SATELLITE_URL}
             attribution={ESRI_ATTR}
             maxZoom={18}
+            maxNativeZoom={18}
+            keepBuffer={6}
+            updateWhenZooming={false}
+            updateWhenIdle={true}
           />
         )}
 
@@ -259,7 +329,7 @@ export function MapView({
 
         {/* Hotspot Core Vector Point (Hover for tooltip, Click to select in HUD) */}
         {layers.activeFires && fireEvents.map((ev) => {
-          const isSelected = selectedEventId === ev.id;
+          const isSelected = activeSelectedId === ev.id;
           const color = ev.riskScore >= 70 ? '#FF3B30' : (ev.riskScore >= 40 ? '#FF7A00' : '#FFD600');
           const radius = isSelected ? 9 : (ev.riskScore >= 70 ? 7 : (ev.riskScore >= 40 ? 6 : 5));
 
@@ -275,7 +345,7 @@ export function MapView({
                 weight: isSelected ? 3 : 2,
               }}
               eventHandlers={{
-                click: () => onSelectEvent?.(ev.id),
+                click: () => handleMarkerClick(ev),
               }}
             >
               <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
@@ -357,8 +427,8 @@ export function MapView({
       </MapContainer>
 
       {/* Non-intrusive Floating Telemetric HUD (docked at bottom-left, never blocks top controls or map) */}
-      {selectedEventId && (() => {
-        const selectedEvent = fireEvents.find((e) => e.id === selectedEventId);
+      {isHudOpen && activeSelectedId && (() => {
+        const selectedEvent = fireEvents.find((e) => e.id === activeSelectedId);
         if (!selectedEvent) return null;
         const color = selectedEvent.riskScore >= 70 ? '#FF3B30' : (selectedEvent.riskScore >= 40 ? '#FF7A00' : '#FFD600');
         const levelLabel = selectedEvent.riskScore >= 70 ? 'CRITICAL / CONFIRMED' : (selectedEvent.riskScore >= 40 ? 'MEDIUM RISK' : 'LOW / WATCH');
@@ -372,7 +442,7 @@ export function MapView({
               </div>
               <button
                 type="button"
-                onClick={() => onSelectEvent?.('')}
+                onClick={handleCloseHud}
                 className="text-fog hover:text-paper text-xs px-1.5 py-0.5 rounded border border-panel-line hover:bg-panel transition-colors"
                 title="Close Inspector"
               >

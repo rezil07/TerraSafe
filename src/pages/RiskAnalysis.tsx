@@ -37,12 +37,13 @@ export function RiskAnalysis() {
             <span className="text-sm font-semibold text-paper">Click a fire event to analyze</span>
             <span className="text-xs font-mono text-fog">Click-to-analyze enabled</span>
           </div>
-          <div className="h-[400px] rounded-lg overflow-hidden">
+          <div className="h-[520px] rounded-lg overflow-hidden">
             <MapView
               height="100%"
               showLegend={false}
-              selectedEventId={selected.id}
+              selectedEventId={selected?.id}
               onSelectEvent={(id) => {
+                if (!id) return;
                 const ev = fireEvents.find((e) => e.id === id);
                 if (ev) setSelected(ev);
               }}

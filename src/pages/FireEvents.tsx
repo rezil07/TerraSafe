@@ -8,15 +8,19 @@ import { fetchFires } from '@/services/api';
 type SortKey = 'id' | 'location' | 'detected' | 'source' | 'confidence' | 'riskScore' | 'status';
 type SortDir = 'asc' | 'desc';
 
-export function FireEvents() {
+interface FireEventsProps {
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+}
+
+export function FireEvents({ searchQuery = '', onSearchChange }: FireEventsProps) {
   const [firesList, setFiresList] = useState<FireEvent[]>(defaultFires);
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<FireStatus | 'all'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('detected');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [visibleCount, setVisibleCount] = useState(10);
-  const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(15);
 
   useEffect(() => {
     fetchFires().then((data) => {
@@ -29,12 +33,13 @@ export function FireEvents() {
     if (riskFilter !== 'all') events = events.filter((e) => e.riskLevel === riskFilter);
     if (sourceFilter !== 'all') events = events.filter((e) => e.source === sourceFilter);
     if (statusFilter !== 'all') events = events.filter((e) => e.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
+    
+    const activeSearch = searchQuery.trim().toLowerCase();
+    if (activeSearch) {
       events = events.filter((e) =>
-        e.name.toLowerCase().includes(q) ||
-        e.location.toLowerCase().includes(q) ||
-        e.id.toLowerCase().includes(q)
+        e.name.toLowerCase().includes(activeSearch) ||
+        e.location.toLowerCase().includes(activeSearch) ||
+        e.id.toLowerCase().includes(activeSearch)
       );
     }
     events.sort((a, b) => {
@@ -44,7 +49,7 @@ export function FireEvents() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return events;
-  }, [firesList, riskFilter, sourceFilter, statusFilter, sortKey, sortDir, search]);
+  }, [firesList, riskFilter, sourceFilter, statusFilter, sortKey, sortDir, searchQuery]);
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -64,51 +69,71 @@ export function FireEvents() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      <PageHeader title="Fire Events" subtitle="All detected fire events with risk and status" />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <PageHeader title="Fire Events" subtitle="All detected fire events with risk and status" />
+        <div className="text-xs font-mono text-cyan bg-cyan/10 px-3 py-1 rounded-full border border-cyan/25">
+          {filtered.length} of {firesList.length} events matching
+        </div>
+      </div>
 
-      {/* Search + filters */}
+      {/* Filters toolbar driven by top searchbar */}
       <div className="panel p-3 flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search by name, location, or ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] bg-void border border-panel-line rounded-lg px-3 py-2 text-sm text-paper placeholder-fog/60 focus:outline-none focus:border-cyan/40"
-        />
-        <select
-          value={riskFilter}
-          onChange={(e) => setRiskFilter(e.target.value as RiskLevel | 'all')}
-          className="bg-void border border-panel-line rounded-lg px-3 py-2 text-sm text-paper focus:outline-none focus:border-cyan/40"
-        >
-          <option value="all">All Risk</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-        </select>
-        <select
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-          className="bg-void border border-panel-line rounded-lg px-3 py-2 text-sm text-paper focus:outline-none focus:border-cyan/40"
-        >
-          <option value="all">All Sources</option>
-          <option value="NASA FIRMS">NASA FIRMS</option>
-          <option value="MODIS">MODIS</option>
-          <option value="VIIRS">VIIRS</option>
-          <option value="GOES">GOES</option>
-          <option value="Ground Report">Ground Report</option>
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as FireStatus | 'all')}
-          className="bg-void border border-panel-line rounded-lg px-3 py-2 text-sm text-paper focus:outline-none focus:border-cyan/40"
-        >
-          <option value="all">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Contained">Contained</option>
-          <option value="Monitored">Monitored</option>
-          <option value="Controlled">Controlled</option>
-        </select>
+        {searchQuery ? (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan/10 border border-cyan/30 text-xs text-cyan">
+            <span className="text-fog">Active Search:</span>
+            <span className="font-semibold text-paper">&ldquo;{searchQuery}&rdquo;</span>
+            <button
+              type="button"
+              onClick={() => onSearchChange?.('')}
+              className="hover:text-paper ml-1 text-fog hover:bg-cyan/20 p-0.5 rounded transition-colors"
+              title="Clear search"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="text-xs text-fog flex items-center gap-1.5 px-1">
+            <span className="w-2 h-2 rounded-full bg-cyan/60 animate-pulse" />
+            Use top search bar to filter by sector, district, state, or ID
+          </div>
+        )}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <select
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value as RiskLevel | 'all')}
+            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+          >
+            <option value="all">All Risk Levels</option>
+            <option value="low">Low (0–39)</option>
+            <option value="medium">Medium (40–69)</option>
+            <option value="high">High (70–89)</option>
+            <option value="critical">Critical (90–100)</option>
+          </select>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+          >
+            <option value="all">All Sources</option>
+            <option value="NASA FIRMS">NASA FIRMS</option>
+            <option value="MODIS">MODIS</option>
+            <option value="VIIRS">VIIRS</option>
+            <option value="GOES">GOES</option>
+            <option value="Ground Report">Ground Report</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as FireStatus | 'all')}
+            className="bg-void border border-panel-line rounded-lg px-3 py-1.5 text-xs text-paper focus:outline-none focus:border-cyan/40"
+          >
+            <option value="all">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Contained">Contained</option>
+            <option value="Monitored">Monitored</option>
+            <option value="Controlled">Controlled</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}

@@ -24,6 +24,7 @@ function PageLoader() {
 export default function App() {
   const [entered, setEntered] = useState(false);
   const [page, setPage] = useState<PageId>('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (!entered) {
     return <LandingPage onEnter={() => setEntered(true)} />;
@@ -34,7 +35,7 @@ export default function App() {
       case 'dashboard': return <Dashboard onNavigate={setPage} />;
       case 'live-map': return <LiveMap />;
       case 'risk-analysis': return <RiskAnalysis />;
-      case 'fire-events': return <FireEvents />;
+      case 'fire-events': return <FireEvents searchQuery={searchQuery} onSearchChange={setSearchQuery} />;
       case 'weather': return <Weather />;
       case 'emergency-response': return <EmergencyResponse />;
       case 'analytics': return <Analytics />;
@@ -45,7 +46,19 @@ export default function App() {
   };
 
   return (
-    <MainDashboard activePage={page} onNavigate={setPage}>
+    <MainDashboard
+      activePage={page}
+      onNavigate={setPage}
+      onGoToLanding={() => setEntered(false)}
+      searchQuery={searchQuery}
+      onSearchChange={(q) => {
+        setSearchQuery(q);
+        if (page !== 'fire-events') setPage('fire-events');
+      }}
+      onSearchFocus={() => {
+        if (page !== 'fire-events') setPage('fire-events');
+      }}
+    >
       <Suspense fallback={<PageLoader />}>
         {renderPage()}
       </Suspense>

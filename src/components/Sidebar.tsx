@@ -24,9 +24,10 @@ interface SidebarProps {
   onNavigate: (page: PageId) => void;
   isOpen: boolean;
   onClose: () => void;
+  onGoToLanding?: () => void;
 }
 
-export function Sidebar({ activePage, onNavigate, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ activePage, onNavigate, isOpen, onClose, onGoToLanding }: SidebarProps) {
   return (
     <>
       {/* Mobile overlay */}
@@ -45,19 +46,24 @@ export function Sidebar({ activePage, onNavigate, isOpen, onClose }: SidebarProp
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        {/* Wordmark */}
+        {/* Wordmark / Logo (Clickable to return to Landing Page) */}
         <div className="p-5 border-b border-panel-line flex items-center justify-between">
-          <div>
+          <button
+            type="button"
+            onClick={onGoToLanding}
+            className="text-left group cursor-pointer focus:outline-none transition-transform active:scale-95"
+            title="Return to Landing Page"
+          >
             <div
-              className="text-lg font-bold uppercase tracking-[0.15em] text-paper"
+              className="text-lg font-bold uppercase tracking-[0.15em] text-paper group-hover:text-cyan transition-colors"
               style={{ textShadow: '0 0 12px rgba(0, 245, 255, 0.3)' }}
             >
               TERRASAFE
             </div>
-            <div className="text-[9px] uppercase tracking-[0.2em] text-fog mt-0.5">
+            <div className="text-[9px] uppercase tracking-[0.2em] text-fog mt-0.5 group-hover:text-cyan/75 transition-colors">
               Earth Intelligence
             </div>
-          </div>
+          </button>
           <button
             onClick={onClose}
             className="md:hidden text-fog hover:text-cyan"

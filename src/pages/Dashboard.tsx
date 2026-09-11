@@ -94,14 +94,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </button>
             }
           />
-          <div className="h-[340px] rounded-lg overflow-hidden border border-panel-line">
+          <div className="h-[500px] rounded-lg overflow-hidden border border-panel-line">
             <MapView height="100%" showLegend={false} events={fireEventsList} />
           </div>
         </div>
 
-        <div className="panel panel-glow p-5">
+        <div className="panel panel-glow p-5 flex flex-col">
           <SectionTitle title="Active Alerts" subtitle={`${activeAlertsList.length} active`} />
-          <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[500px] flex-1 overflow-y-auto pr-1">
             {activeAlertsList.map((alert) => (
               <div
                 key={alert.id}

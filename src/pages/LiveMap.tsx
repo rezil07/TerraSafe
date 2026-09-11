@@ -42,14 +42,19 @@ export function LiveMap() {
   const selectedEvent = firesList.find((e) => e.id === selectedId);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-paper tracking-tight">Live Map</h1>
-        <p className="text-fog text-sm mt-1">Real-time Indian wildfire map with multi-layer telemetry overlays</p>
+    <div className="max-w-[1700px] mx-auto space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold text-paper tracking-tight">Live Map</h1>
+          <p className="text-fog text-sm mt-1">Real-time Indian wildfire map with multi-layer telemetry overlays</p>
+        </div>
+        <div className="text-xs font-mono text-cyan bg-cyan/10 px-3 py-1 rounded-full border border-cyan/25">
+          {filteredEvents.length} Active Hotspots Ingested
+        </div>
       </div>
 
       {/* Filters bar */}
-      <div className="panel p-3 mb-4 flex flex-wrap items-center gap-3">
+      <div className="panel p-3 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <label className="text-xs text-fog uppercase tracking-wider">Time</label>
           <select
@@ -118,14 +123,14 @@ export function LiveMap() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Map */}
-        <div className="lg:col-span-2 panel panel-glow p-1 relative">
-          <div className="h-[500px] rounded-lg overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Expanded Map View (takes 3/4 width on desktop) */}
+        <div className="lg:col-span-3 panel panel-glow p-1 relative">
+          <div className="h-[680px] rounded-lg overflow-hidden">
             <MapView
               layers={layers}
               selectedEventId={selectedId}
-              onSelectEvent={(id) => setSelectedId(id)}
+              onSelectEvent={(id) => setSelectedId(id ? id : null)}
               height="100%"
               events={filteredEvents}
             />
@@ -150,8 +155,8 @@ export function LiveMap() {
           )}
         </div>
 
-        {/* Events list */}
-        <div className="panel panel-glow p-4 flex flex-col" style={{ maxHeight: '500px' }}>
+        {/* Events list (sidebar taking 1/4 width) */}
+        <div className="panel panel-glow p-4 flex flex-col" style={{ maxHeight: '680px' }}>
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-paper">Fire Events</h2>
             <p className="text-xs text-fog mt-0.5">{filteredEvents.length} events on map</p>
