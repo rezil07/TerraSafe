@@ -61,11 +61,31 @@ interface MapViewProps {
   events?: FireEvent[];
 }
 
-// 100% free, high-performance Esri Basemaps (No API key, No watermarks)
-const ESRI_DARK_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-const ESRI_DARK_REF_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+// 100% free, high-performance Esri Satellite Basemap (No API key, No watermarks)
 const ESRI_SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const ESRI_ATTR = '&copy; <a href="https://www.esri.com">Esri</a> &mdash; Earthstar Geographics';
+
+/**
+ * Creates custom HTML hotspot markers that translate without SVG scaling distortion
+ */
+function getHotspotIcon(riskScore: number, isSelected: boolean) {
+  const color = riskScore >= 70 ? '#FF3B30' : (riskScore >= 40 ? '#FF7A00' : '#FFD600');
+  const size = isSelected ? 26 : (riskScore >= 70 ? 22 : (riskScore >= 40 ? 18 : 15));
+  const core = isSelected ? 12 : (riskScore >= 70 ? 10 : (riskScore >= 40 ? 8 : 7));
+  const shadow = isSelected ? `0 0 16px ${color}, 0 0 4px #FFFFFF` : `0 0 8px ${color}`;
+
+  return L.divIcon({
+    className: 'hotspot-vector-pin',
+    html: `
+      <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.35;box-shadow:0 0 10px ${color};"></div>
+        <div style="width:${core}px;height:${core}px;border-radius:50%;background:${color};border:${isSelected ? '2px solid #FFFFFF' : '1.5px solid rgba(0,0,0,0.85)'};box-shadow:${shadow};position:relative;z-index:2;"></div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
 
 /**
  * Controller to handle camera view modes, auto-fit, and tile resize invalidation
@@ -97,11 +117,11 @@ function MapController({
     };
   }, [map]);
 
-  // Pan and zoom smoothly to target coordinates with closest look (zoom 16)
+  // Pan and zoom smoothly to target coordinates with closest look (zoom 15)
   useEffect(() => {
     if (flyTarget) {
-      map.flyTo([flyTarget.lat, flyTarget.lng], 16, {
-        duration: 1.4,
+      map.flyTo([flyTarget.lat, flyTarget.lng], 15, {
+        duration: 1.2,
         easeLinearity: 0.25,
       });
       return;
@@ -109,8 +129,8 @@ function MapController({
     if (selectedEventId) {
       const target = events.find((e) => e.id === selectedEventId);
       if (target) {
-        map.flyTo([target.lat, target.lng], 16, {
-          duration: 1.4,
+        map.flyTo([target.lat, target.lng], 15, {
+          duration: 1.2,
           easeLinearity: 0.25,
         });
       }
@@ -164,7 +184,6 @@ export function MapView({
   className = '',
   events,
 }: MapViewProps) {
-  const [basemap, setBasemap] = useState<'dark' | 'satellite'>('dark');
   const [viewMode, setViewMode] = useState<'india' | 'hotspots'>('india');
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
   const [isHudOpen, setIsHudOpen] = useState(false);
@@ -205,31 +224,8 @@ export function MapView({
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
-      {/* Top Controls Bar: Basemap & Camera View */}
+      {/* Top Controls Bar: Camera View Switcher */}
       <div className="absolute top-3 left-14 z-[500] flex flex-wrap items-center gap-2">
-        {/* Basemap Switcher */}
-        <div className="flex items-center bg-void/90 p-0.5 rounded-lg border border-panel-line text-xs shadow-lg">
-          <button
-            type="button"
-            onClick={() => setBasemap('dark')}
-            className={`px-2.5 py-1 rounded transition-colors ${
-              basemap === 'dark' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
-            }`}
-          >
-            Tactical Dark
-          </button>
-          <button
-            type="button"
-            onClick={() => setBasemap('satellite')}
-            className={`px-2.5 py-1 rounded transition-colors ${
-              basemap === 'satellite' ? 'bg-cyan/20 text-cyan font-medium' : 'text-fog hover:text-paper'
-            }`}
-          >
-            Satellite
-          </button>
-        </div>
-
-        {/* Camera View Switcher */}
         <div className="flex items-center bg-void/90 p-0.5 rounded-lg border border-panel-line text-xs shadow-lg">
           <button
             type="button"
@@ -263,6 +259,7 @@ export function MapView({
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom
+        preferCanvas={true}
         zoomAnimation={true}
         fadeAnimation={true}
         markerZoomAnimation={true}
@@ -276,86 +273,39 @@ export function MapView({
           flyTarget={flyTarget}
         />
 
-        {basemap === 'dark' ? (
-          <>
-            <TileLayer
-              url={ESRI_DARK_URL}
-              attribution={ESRI_ATTR}
-              maxZoom={18}
-              maxNativeZoom={16}
-              keepBuffer={6}
-              updateWhenZooming={false}
-              updateWhenIdle={true}
-            />
-            <TileLayer
-              url={ESRI_DARK_REF_URL}
-              attribution={ESRI_ATTR}
-              maxZoom={18}
-              maxNativeZoom={16}
-              keepBuffer={6}
-              updateWhenZooming={false}
-              updateWhenIdle={true}
-            />
-          </>
-        ) : (
-          <TileLayer
-            url={ESRI_SATELLITE_URL}
-            attribution={ESRI_ATTR}
-            maxZoom={18}
-            maxNativeZoom={18}
-            keepBuffer={6}
-            updateWhenZooming={false}
-            updateWhenIdle={true}
-          />
-        )}
+        {/* Photorealistic High-Resolution Satellite Basemap */}
+        <TileLayer
+          url={ESRI_SATELLITE_URL}
+          attribution={ESRI_ATTR}
+          maxZoom={18}
+          maxNativeZoom={18}
+          keepBuffer={8}
+          updateWhenZooming={false}
+          updateWhenIdle={true}
+        />
 
-        {/* Hotspot Outer Thermal Aura */}
-        {layers.activeFires && fireEvents.map((ev) => {
-          const color = ev.riskScore >= 70 ? '#FF3B30' : (ev.riskScore >= 40 ? '#FF7A00' : '#FFD600');
-          return (
-            <CircleMarker
-              key={`aura-${ev.id}`}
-              center={[ev.lat, ev.lng]}
-              radius={ev.riskScore >= 70 ? 14 : (ev.riskScore >= 40 ? 11 : 9)}
-              pathOptions={{
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.22,
-                weight: 1,
-              }}
-            />
-          );
-        })}
-
-        {/* Hotspot Core Vector Point (Hover for tooltip, Click to select in HUD) */}
+        {/* Hotspot Vector Markers (HTML DivIcon - Smooth translation without SVG zoom distortion) */}
         {layers.activeFires && fireEvents.map((ev) => {
           const isSelected = activeSelectedId === ev.id;
           const color = ev.riskScore >= 70 ? '#FF3B30' : (ev.riskScore >= 40 ? '#FF7A00' : '#FFD600');
-          const radius = isSelected ? 9 : (ev.riskScore >= 70 ? 7 : (ev.riskScore >= 40 ? 6 : 5));
 
           return (
-            <CircleMarker
+            <Marker
               key={ev.id}
-              center={[ev.lat, ev.lng]}
-              radius={radius}
-              pathOptions={{
-                color: isSelected ? '#FFFFFF' : color,
-                fillColor: color,
-                fillOpacity: 0.95,
-                weight: isSelected ? 3 : 2,
-              }}
+              position={[ev.lat, ev.lng]}
+              icon={getHotspotIcon(ev.riskScore, isSelected)}
               eventHandlers={{
                 click: () => handleMarkerClick(ev),
               }}
             >
-              <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
+              <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
                 <div className="text-xs font-semibold text-paper">{ev.name}</div>
                 <div className="text-[10px] text-fog">{ev.location}</div>
                 <div className="text-[10px] font-mono mt-0.5" style={{ color }}>
                   Risk: {ev.riskScore}/100 • {ev.riskScore >= 70 ? 'CRITICAL' : (ev.riskScore >= 40 ? 'MEDIUM' : 'WATCH')}
                 </div>
               </Tooltip>
-            </CircleMarker>
+            </Marker>
           );
         })}
 
